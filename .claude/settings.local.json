@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "mcp__Claude_Preview__preview_start",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(npm ls *)",
+      "Bash(node -e \"const p = require\\('./public/data/places.json'\\); const ids = p.features.map\\(f=>f.properties.id\\); const dupes = ids.filter\\(\\(x,i\\)=>ids.indexOf\\(x\\)!==i\\); console.log\\('features:', ids.length, 'dupes:', dupes\\); const bad = p.features.filter\\(f=>!f.properties.title||!f.properties.year||!f.properties.category||f.geometry.coordinates.length!==2\\); console.log\\('invalid:', bad.length\\);\")",
+      "Bash(git init *)",
+      "Bash(gh auth *)",
+      "Bash(git add *)",
+      "Bash(git -c 'user.name=Paul Swindell' -c user.email=paul.swindell@scauk.org commit -m ' *)"
+    ]
+  }
+}

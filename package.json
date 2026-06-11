@@ -1,0 +1,24 @@
+{
+  "name": "world-in-their-eyes",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A map-based fan atlas platform. Explore a band's history, places and stories on an interactive world map. Configurable for any artist.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "seed": "node scripts/seed.mjs",
+    "import:setlistfm": "node scripts/import-setlistfm.mjs",
+    "enrich": "node scripts/enrich-stories.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.1",
+    "@supabase/supabase-js": "^2.108.1",
+    "canvas-confetti": "^1.9.4",
+    "maplibre-gl": "^5.24.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.0"
+  }
+}

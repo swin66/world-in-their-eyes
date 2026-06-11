@@ -1,0 +1,1077 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.2229, 51.4927] },
+      "properties": {
+        "id": "alan-wilder-born",
+        "title": "Hammersmith, London",
+        "category": "people",
+        "year": 1959,
+        "summary": "Alan Wilder is born — 1 June 1959.",
+        "story": "The classically trained musician who joined in 1982 and became the band's studio architect through their imperial phase, from Construction Time Again to Songs of Faith and Devotion."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0.027, 51.5917] },
+      "properties": {
+        "id": "vince-clarke-born",
+        "title": "South Woodford, London",
+        "category": "people",
+        "year": 1960,
+        "summary": "Vince Clarke is born — 3 July 1960.",
+        "story": "The founding songwriter behind Dreaming of Me, New Life and Just Can't Get Enough. He left after Speak & Spell to form Yazoo and later Erasure — handing the songwriting torch to Martin Gore."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0.1313, 51.5541] },
+      "properties": {
+        "id": "martin-gore-born",
+        "title": "Dagenham, London",
+        "category": "people",
+        "year": 1961,
+        "summary": "Martin Gore is born — 23 July 1961.",
+        "story": "Born in Dagenham and raised in Basildon, Martin became the band's principal songwriter from 1982 onwards — the pen behind Personal Jesus, Enjoy the Silence, Never Let Me Down Again and nearly everything else."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-1.1505, 52.9536] },
+      "properties": {
+        "id": "andy-fletcher-born",
+        "title": "Nottingham",
+        "category": "people",
+        "year": 1961,
+        "summary": "Andy 'Fletch' Fletcher is born — 8 July 1961.",
+        "story": "Born in Nottingham before his family moved to Basildon, Fletch was the band's heart, diplomat and self-described 'tall guy in the background'. He remained a constant for 42 years until his death in May 2022."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0.11, 51.699] },
+      "properties": {
+        "id": "dave-gahan-born",
+        "title": "Epping, Essex",
+        "category": "people",
+        "year": 1962,
+        "summary": "Dave Gahan is born — 9 May 1962.",
+        "story": "Born in Epping and raised in Basildon, Dave was recruited after Vince Clarke heard him sing Bowie's 'Heroes' at a jam session. He even gave the band its name, borrowed from French fashion magazine Dépêche Mode."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0.4889, 51.5762] },
+      "properties": {
+        "id": "basildon",
+        "title": "Basildon, Essex",
+        "category": "origins",
+        "year": 1980,
+        "summary": "Where it all began.",
+        "story": "The Essex new town where Dave Gahan, Martin Gore, Andy Fletcher and Vince Clarke grew up and formed the band in 1980. The town's pedestrian underpasses and brutalist architecture have become pilgrimage sites for fans from around the world."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0.4727, 51.5895] },
+      "properties": {
+        "id": "first-gig",
+        "title": "St Nicholas School, Basildon",
+        "category": "gig",
+        "year": 1980,
+        "summary": "The first gig as 'Depeche Mode'.",
+        "approx": true,
+        "story": "After early shows as Composition of Sound, the freshly renamed Depeche Mode played a school gig in Basildon in the autumn of 1980 — Dave Gahan now on vocals, three synths, and a drum machine. Nobody present knew they were watching history."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0.0142, 51.5142] },
+      "properties": {
+        "id": "bridge-house",
+        "title": "The Bridge House, Canning Town",
+        "category": "gig",
+        "year": 1980,
+        "summary": "The gig that changed everything.",
+        "story": "The legendary East London pub venue where the young band played early shows — and where Daniel Miller of Mute Records saw them, leading to the handshake deal that defined their career. The venue closed in 1982; a plaque-worthy spot for any devotee."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.2199, 51.5273] },
+      "properties": {
+        "id": "mute",
+        "title": "Mute Records, London",
+        "category": "milestone",
+        "year": 1981,
+        "summary": "The label. The handshake.",
+        "approx": true,
+        "story": "Daniel Miller's fiercely independent label signed the band on a handshake and a 50/50 profit split — no contract — and stayed their home for over two decades. One of the great artist-label partnerships in music history."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "properties": {
+        "id": "blackwing",
+        "title": "Blackwing Studios, Southwark",
+        "category": "studio",
+        "year": 1981,
+        "summary": "The church where synth-pop history was made.",
+        "story": "Housed in the deconsecrated All Hallows Church in south London, Blackwing is where the first singles and the first two albums took shape — synth-pop history made inside a Victorian church."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "properties": {
+        "id": "dreaming-of-me",
+        "title": "Dreaming of Me — debut single",
+        "category": "release",
+        "year": 1981,
+        "summary": "The first record, February 1981.",
+        "story": "Recorded at Blackwing with Daniel Miller producing, the debut single scraped to No. 57 in the UK — enough for Mute to keep going. New Life and Just Can't Get Enough followed within months, and the rocket left the pad."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "properties": {
+        "id": "speak-and-spell",
+        "title": "Speak & Spell",
+        "category": "release",
+        "year": 1981,
+        "summary": "The debut album.",
+        "story": "Recorded at Blackwing and released in October 1981 — bubbly Vince Clarke synth-pop including Just Can't Get Enough. Weeks after release, Clarke announced he was leaving."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.2266, 51.5098] },
+      "properties": {
+        "id": "totp",
+        "title": "BBC Television Centre, London",
+        "category": "milestone",
+        "year": 1981,
+        "summary": "Top of the Pops debut.",
+        "story": "Performing New Life on Top of the Pops in June 1981 put four Basildon teenagers in front of the whole nation. Fletch kept his bank job a little longer — just in case."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-73.989, 40.732] },
+      "properties": {
+        "id": "first-us-show",
+        "title": "The Ritz, New York",
+        "category": "gig",
+        "year": 1982,
+        "summary": "First American show.",
+        "approx": true,
+        "story": "The band's first US appearance came at Manhattan's The Ritz in January 1982 — a teenage synth band a long way from Essex, planting the first seed of what would become one of America's biggest cult followings."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "properties": {
+        "id": "a-broken-frame",
+        "title": "A Broken Frame",
+        "category": "release",
+        "year": 1982,
+        "summary": "Martin takes the pen.",
+        "story": "Recorded at Blackwing as a trio after Vince Clarke's departure, with Martin Gore suddenly chief songwriter. See You and Leave in Silence pointed toward the moodier band to come."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.223, 51.4895] },
+      "properties": {
+        "id": "hammersmith-odeon",
+        "title": "Hammersmith Odeon, London",
+        "category": "gig",
+        "year": 1982,
+        "summary": "Alan Wilder's era begins on stage.",
+        "story": "Through 1982 the live band was completed by Alan Wilder, recruited via a Melody Maker ad ('must be under 21' — he wasn't). London theatre shows like Hammersmith captured the moment the boys became a real touring force."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.081, 51.5265] },
+      "properties": {
+        "id": "construction-time-again",
+        "title": "Construction Time Again",
+        "category": "release",
+        "year": 1983,
+        "summary": "Sampling, steel and politics.",
+        "approx": true,
+        "story": "Recorded at The Garden in Shoreditch (John Foxx's studio) and mixed at Hansa Berlin. The band discovered sampling — hitting scrap metal for Pipeline — and Everything Counts gave them their anthem of industry and greed."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.3713, 52.5046] },
+      "properties": {
+        "id": "hansa",
+        "title": "Hansa Studios, Berlin",
+        "category": "studio",
+        "year": 1983,
+        "summary": "The hall by the Wall.",
+        "story": "The band's mid-80s creative home, metres from the Berlin Wall. The Meistersaal's atmosphere — and West Berlin's nightlife — seeped into the darker, industrial textures of the band's imperial phase."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.3713, 52.5046] },
+      "properties": {
+        "id": "some-great-reward",
+        "title": "Some Great Reward",
+        "category": "release",
+        "year": 1984,
+        "summary": "People are people — and blasphemous rumours.",
+        "story": "Largely recorded and mixed at Hansa Berlin. People Are People became their first US hit, Master and Servant scandalised radio, and Somebody proved Martin could break hearts with just a piano."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.3713, 52.5046] },
+      "properties": {
+        "id": "black-celebration",
+        "title": "Black Celebration",
+        "category": "release",
+        "year": 1986,
+        "summary": "The dark blueprint.",
+        "story": "Recorded at Westside London and Hansa Berlin, Black Celebration is the moment the band's gothic, atmospheric identity fully formed — Stripped, A Question of Lust, and a title track for everyone surviving another day."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [2.227, 48.87] },
+      "properties": {
+        "id": "music-for-the-masses",
+        "title": "Music for the Masses",
+        "category": "release",
+        "year": 1987,
+        "summary": "The album that conquered America.",
+        "approx": true,
+        "story": "Recorded largely at Studio Guillaume Tell near Paris with Dave Bascombe. Never Let Me Down Again, Strangelove and Behind the Wheel armed the tour that ended at the Rose Bowl — the ironic title came true."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.1676, 34.1613] },
+      "properties": {
+        "id": "rose-bowl",
+        "title": "Rose Bowl, Pasadena",
+        "category": "gig",
+        "year": 1988,
+        "summary": "101 — the concert for the masses.",
+        "story": "On 18 June 1988, the Music for the Masses tour climaxed in front of roughly 65,000 fans — the band's 101st and final show of the tour, immortalised in D.A. Pennebaker's film and live album '101'. The moment a cult British synth band proved they were a stadium act in America."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-2.39, 37.05] },
+      "properties": {
+        "id": "personal-jesus-video",
+        "title": "Tabernas Desert, Almería",
+        "category": "video",
+        "year": 1989,
+        "summary": "Personal Jesus — a western in Spain.",
+        "approx": true,
+        "story": "Anton Corbijn shot the Personal Jesus video in Spain's Tabernas Desert, where the spaghetti westerns were filmed — cowboys, horses and a bordello aesthetic for the single that re-invented Depeche Mode with a guitar riff."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [10.046, 56.5377] },
+      "properties": {
+        "id": "puk",
+        "title": "Puk Studios, Denmark",
+        "category": "studio",
+        "year": 1989,
+        "summary": "Violator sessions in rural Jutland.",
+        "approx": true,
+        "story": "A residential studio in the Danish countryside where much of Violator was crafted, with Flood co-producing and Alan Wilder pushing the band's sound design to new heights."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [9.19, 45.4642] },
+      "properties": {
+        "id": "violator",
+        "title": "Violator",
+        "category": "release",
+        "year": 1990,
+        "summary": "The masterpiece.",
+        "approx": true,
+        "story": "Begun at Logic Studios in Milan, continued at Puk in Denmark and mixed in London. Personal Jesus, Enjoy the Silence, Policy of Truth, World in My Eyes — the album this very app is named after, and the band's creative and commercial peak."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [8.0, 46.6] },
+      "properties": {
+        "id": "enjoy-the-silence",
+        "title": "Swiss Alps",
+        "category": "video",
+        "year": 1990,
+        "summary": "A king with a deckchair.",
+        "approx": true,
+        "story": "Anton Corbijn filmed Dave Gahan wandering mountain landscapes as a king carrying a deckchair for the Enjoy the Silence video — shot across the Swiss Alps, Portugal and the Scottish Highlands. One of the most iconic music videos ever made."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.385, 34.0905] },
+      "properties": {
+        "id": "tower-records",
+        "title": "Tower Records, Sunset Strip",
+        "category": "milestone",
+        "year": 1990,
+        "summary": "The Violator signing 'riot'.",
+        "story": "A planned in-store signing for Violator in March 1990 drew an estimated 17,000+ fans to West Hollywood, overwhelming police and making the evening news. Proof of just how big the band had become in the US."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-74.0776, 40.8128] },
+      "properties": {
+        "id": "world-violation-giants",
+        "title": "Giants Stadium, New Jersey",
+        "category": "gig",
+        "year": 1990,
+        "summary": "World Violation conquers the East Coast.",
+        "story": "The World Violation Tour sold out Giants Stadium — around 80,000 tickets gone in hours — alongside multiple nights at Dodger Stadium in LA. Violator-era Depeche Mode were, by any measure, one of the biggest bands on Earth."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-3.6883, 40.453] },
+      "properties": {
+        "id": "madrid-villa",
+        "title": "Madrid",
+        "category": "studio",
+        "year": 1992,
+        "summary": "Songs of Faith and Devotion begins.",
+        "approx": true,
+        "story": "The band rented a villa in Madrid and converted it into a studio to begin Songs of Faith and Devotion — famously tense sessions, a band fraying at the edges, yet producing some of their most powerful music."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-3.6883, 40.453] },
+      "properties": {
+        "id": "sofad",
+        "title": "Songs of Faith and Devotion",
+        "category": "release",
+        "year": 1993,
+        "summary": "Grunge-era gospel. A UK and US No. 1.",
+        "approx": true,
+        "story": "Built in the Madrid villa and finished in Hamburg and London, SOFAD debuted at No. 1 on both sides of the Atlantic. I Feel You, Walking in My Shoes, Condemnation — the sound of a band tearing itself apart and making it sing."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.07, 51.422] },
+      "properties": {
+        "id": "crystal-palace",
+        "title": "Crystal Palace Bowl, London",
+        "category": "gig",
+        "year": 1993,
+        "summary": "Devotional comes home.",
+        "story": "On 31 July 1993, the Devotional Tour played its great London open-air show at Crystal Palace Bowl. The tour was later described as 'the most debauched rock'n'roll tour in history' — and the music was extraordinary."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [28.0473, -26.2041] },
+      "properties": {
+        "id": "exotic-johannesburg",
+        "title": "Johannesburg, South Africa",
+        "category": "gig",
+        "year": 1994,
+        "summary": "The Exotic Tour goes where no tour had gone.",
+        "approx": true,
+        "story": "The 1994 Exotic Tour took the Devotional show to South Africa, South America, Hawaii and Southeast Asia — first-ever shows on several continents, with a band running on fumes. Alan Wilder left the following year."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.205, 51.523] },
+      "properties": {
+        "id": "ultra",
+        "title": "Ultra",
+        "category": "release",
+        "year": 1997,
+        "summary": "The resurrection record.",
+        "approx": true,
+        "story": "Recorded with Tim Simenon at Eastcote in London and studios in LA and New York, as a trio and against the odds — Dave newly clean after nearly dying in 1996. Barrel of a Gun and It's No Good announced the band had survived itself."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [26.729, 58.3776] },
+      "properties": {
+        "id": "singles-tour-tartu",
+        "title": "Tartu, Estonia",
+        "category": "gig",
+        "year": 1998,
+        "summary": "The Singles Tour opens behind the old Iron Curtain.",
+        "approx": true,
+        "story": "The Singles Tour 86>98 opened in Tartu, Estonia in September 1998 — a nod to the band's enormous Eastern European following, where bootleg tapes had made them folk heroes long before they could play there."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.172, 51.533] },
+      "properties": {
+        "id": "exciter",
+        "title": "Exciter",
+        "category": "release",
+        "year": 2001,
+        "summary": "Minimal, digital, tender.",
+        "approx": true,
+        "story": "Produced by LFO's Mark Bell, with sessions at RAK in London and studios in Santa Barbara and New York. Dream On and I Feel Loved took the band into the new century with a quieter kind of confidence."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "properties": {
+        "id": "sound-design",
+        "title": "Santa Barbara, California",
+        "category": "studio",
+        "year": 2005,
+        "summary": "The band's West Coast home base.",
+        "approx": true,
+        "story": "From the mid-2000s, much of every album took shape in Santa Barbara, where Martin Gore settled — at Sound Design and later his home studio, wonderfully named Electric Ladyboy. The Essex boys' story now runs through Californian sunshine."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "properties": {
+        "id": "playing-the-angel",
+        "title": "Playing the Angel",
+        "category": "release",
+        "year": 2005,
+        "summary": "Pain and suffering in various tempos.",
+        "approx": true,
+        "story": "Recorded in Santa Barbara and New York with Ben Hillier. Precious returned them to the top 10 worldwide, and for the first time Dave Gahan contributed songs — including Suffer Well."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [9.1428, 45.402] },
+      "properties": {
+        "id": "touring-the-angel-milan",
+        "title": "Forum di Assago, Milan",
+        "category": "gig",
+        "year": 2006,
+        "summary": "Touring the Angel: Live in Milan.",
+        "story": "The Touring the Angel shows at Milan's Forum were filmed for the celebrated live DVD — Italy's famously devoted fanbase providing one of the loudest crowds the band ever recorded."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "properties": {
+        "id": "sounds-of-the-universe",
+        "title": "Sounds of the Universe",
+        "category": "release",
+        "year": 2009,
+        "summary": "Vintage synths from eBay.",
+        "approx": true,
+        "story": "Martin bought a trove of vintage analogue gear online and the band built the album around it in Santa Barbara and New York. Wrong gave them one of their strangest, darkest singles — and videos."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [34.824, 32.078] },
+      "properties": {
+        "id": "tour-universe-tel-aviv",
+        "title": "Ramat Gan Stadium, Tel Aviv",
+        "category": "gig",
+        "year": 2009,
+        "summary": "Tour of the Universe lifts off.",
+        "story": "The Tour of the Universe opened in Tel Aviv in May 2009. Days later Dave was diagnosed with a bladder tumour, forcing postponements — he recovered, and the tour went on to play to over 2.7 million people."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [2.1174, 41.3641] },
+      "properties": {
+        "id": "tour-universe-barcelona",
+        "title": "Palau Sant Jordi, Barcelona",
+        "category": "gig",
+        "year": 2009,
+        "summary": "Tour of the Universe: Barcelona — the live film.",
+        "story": "The November 2009 Barcelona shows were filmed for the Tour of the Universe live album and film — Spain's fervent fanbase captured in full voice for posterity."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-74.002, 40.751] },
+      "properties": {
+        "id": "delta-machine",
+        "title": "Delta Machine",
+        "category": "release",
+        "year": 2013,
+        "summary": "Blues in the machine.",
+        "approx": true,
+        "story": "Recorded in Santa Barbara and at Jungle City in New York with Ben Hillier. Heaven and Should Be Higher leaned into the gospel-blues undercurrent that had always run beneath the synths."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [2.3601, 48.9245] },
+      "properties": {
+        "id": "delta-stade-de-france",
+        "title": "Stade de France, Paris",
+        "category": "gig",
+        "year": 2013,
+        "summary": "The Delta Machine Tour at full scale.",
+        "story": "The 2013–14 Delta Machine Tour filled Europe's biggest stadiums, including the Stade de France — three decades on from Blackwing, still growing."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "properties": {
+        "id": "spirit",
+        "title": "Spirit",
+        "category": "release",
+        "year": 2017,
+        "summary": "Where's the revolution?",
+        "approx": true,
+        "story": "Recorded in Santa Barbara and New York with James Ford producing — the band's angriest, most political record since the 80s, released into a world that had caught up with its warnings."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [17.929, 59.3725] },
+      "properties": {
+        "id": "global-spirit-stockholm",
+        "title": "Friends Arena, Stockholm",
+        "category": "gig",
+        "year": 2017,
+        "summary": "Global Spirit Tour opens.",
+        "story": "The Global Spirit Tour opened in Stockholm in May 2017 and went on to reach more than 3 million people — at the time one of the highest-attended tours in the world."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.2406, 52.5158] },
+      "properties": {
+        "id": "waldbuehne",
+        "title": "Waldbühne, Berlin",
+        "category": "gig",
+        "year": 2018,
+        "summary": "A spiritual home crowd.",
+        "story": "The Global Spirit tour closed with celebrated 2018 Waldbühne shows in Berlin — the city that shaped the band's sound — filmed for the SPiRiTS in the Forest documentary, a love letter to the fans themselves."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-81.6954, 41.5085] },
+      "properties": {
+        "id": "rock-hall",
+        "title": "Rock & Roll Hall of Fame, Cleveland",
+        "category": "milestone",
+        "year": 2020,
+        "summary": "Inducted at last.",
+        "story": "In 2020, Depeche Mode were inducted into the Rock & Roll Hall of Fame — formal recognition, four decades in, that the synthesizer band from Basildon changed popular music."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "properties": {
+        "id": "memento-mori",
+        "title": "Memento Mori",
+        "category": "release",
+        "year": 2023,
+        "summary": "Remember you must die — so live.",
+        "approx": true,
+        "story": "Largely written before Andy Fletcher's death in May 2022 and recorded in Santa Barbara and New York with James Ford. Ghosts Again gave the band their most beloved single in years; the album is dedicated to Fletch's memory."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-121.4996, 38.5802] },
+      "properties": {
+        "id": "memento-mori-opener",
+        "title": "Golden 1 Center, Sacramento",
+        "category": "gig",
+        "year": 2023,
+        "summary": "Memento Mori begins.",
+        "story": "On 23 March 2023, Dave and Martin opened the Memento Mori world tour — the first without Andy Fletcher, whose memory the tour honoured nightly. It became one of the highest-grossing tours of the band's career."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.3415, 51.4559] },
+      "properties": {
+        "id": "memento-mori-twickenham",
+        "title": "Twickenham Stadium, London",
+        "category": "gig",
+        "year": 2023,
+        "summary": "Memento Mori's London homecoming.",
+        "story": "In June 2023 the Memento Mori tour came home to London's 80,000-capacity Twickenham Stadium — Basildon boys, 43 years on, still filling the biggest stages in their own country."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-2.992, 43.289] },
+      "properties": {
+        "id": "memento-mori-finale",
+        "title": "Bilbao, Spain",
+        "category": "gig",
+        "year": 2024,
+        "summary": "The final show of Memento Mori.",
+        "approx": true,
+        "story": "The Memento Mori world tour closed in Bilbao in April 2024 after 112 shows across the globe — the end of the band's most emotional tour, and (for now) the latest chapter of the story."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "properties": {
+        "id": "yazoo-upstairs",
+        "title": "Yazoo — Upstairs at Eric's",
+        "category": "offshoot",
+        "year": 1982,
+        "artistId": "yazoo",
+        "summary": "Vince's next chapter, same studio.",
+        "story": "Within weeks of leaving Depeche Mode, Vince Clarke was back at Blackwing with Alison Moyet recording Yazoo's debut — named after engineer Eric Radcliffe's upstairs room. Only You and Don't Go came out of the very building where Speak & Spell was made."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "properties": {
+        "id": "the-assembly-never-never",
+        "title": "The Assembly — Never Never",
+        "category": "offshoot",
+        "year": 1983,
+        "artistId": "the-assembly",
+        "summary": "Vince and Eric's top-5 one-off.",
+        "story": "Vince Clarke and Blackwing's Eric Radcliffe planned a project with a different singer on every release. They managed one: Never Never with Feargal Sharkey, a UK No. 4 — then Vince met Andy Bell and Erasure happened instead."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1276, 51.5072] },
+      "properties": {
+        "id": "erasure-formed",
+        "title": "Erasure forms in London",
+        "category": "offshoot",
+        "year": 1985,
+        "artistId": "erasure",
+        "approx": true,
+        "summary": "Audition number 42: Andy Bell.",
+        "story": "Vince Clarke auditioned singers through a Melody Maker ad; Andy Bell was the 42nd hopeful. Wonderland followed in 1986, and Erasure became one of Britain's most enduring pop acts — still going four decades later."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0.05, 50.95] },
+      "properties": {
+        "id": "recoil-thin-line",
+        "title": "Recoil — The Thin Line, Sussex",
+        "category": "offshoot",
+        "year": 1995,
+        "artistId": "recoil",
+        "approx": true,
+        "summary": "Alan Wilder's life after Mode.",
+        "story": "After leaving Depeche Mode in 1995, Alan Wilder made Recoil his full-time vehicle, recording dark, cinematic albums like Unsound Methods and subHuman at his Sussex home studio, The Thin Line."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "properties": {
+        "id": "counterfeit2",
+        "title": "Martin L. Gore — Counterfeit²",
+        "category": "offshoot",
+        "year": 2003,
+        "artistId": "martin-gore-solo",
+        "approx": true,
+        "summary": "The songwriter sings everyone else.",
+        "story": "Martin's solo outlet has always been covers and instrumentals — the Counterfeit EPs and later the MG and Third Chimpanzee albums, made at his Santa Barbara home studio. The writer of hundreds of songs, relaxing in other people's."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-73.99, 40.73] },
+      "properties": {
+        "id": "paper-monsters",
+        "title": "Dave Gahan — Paper Monsters",
+        "category": "offshoot",
+        "year": 2003,
+        "artistId": "dave-gahan-solo",
+        "approx": true,
+        "summary": "The voice becomes a writer.",
+        "story": "Dave's solo debut, written and recorded in New York where he'd rebuilt his life. Its success changed Depeche Mode itself — from Playing the Angel onwards, Gahan songs appear on every album."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.25, 34.05] },
+      "properties": {
+        "id": "soulsavers",
+        "title": "Dave Gahan & Soulsavers",
+        "category": "offshoot",
+        "year": 2012,
+        "artistId": "dave-gahan-solo",
+        "approx": true,
+        "summary": "Gospel, soul and redemption songs.",
+        "story": "Dave's ongoing collaboration with production duo Soulsavers — The Light the Dead See, Angels & Ghosts and Imposter — recorded largely in Los Angeles, gave his voice its most soulful setting outside the Mode."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0.6049, 51.5864] },
+      "properties": {
+        "id": "crocs-rayleigh",
+        "title": "Croc's, Rayleigh",
+        "category": "gig",
+        "year": 1980,
+        "approx": true,
+        "summary": "The Essex residency.",
+        "story": "The crocodile-themed Rayleigh club (later the Pink Toothbrush) where the fledgling band played a near-weekly residency in 1980–81, building the local following that carried them to London."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [0.4889, 51.5762] },
+      "properties": {
+        "id": "vince-leaves",
+        "title": "Vince Clarke leaves",
+        "category": "milestone",
+        "year": 1981,
+        "summary": "The songwriter walks, weeks after the debut.",
+        "story": "In November 1981, with Speak & Spell still climbing the charts, Vince Clarke announced he was leaving. Most bands would have died on the spot; instead, 20-year-old Martin Gore picked up the pen."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "properties": {
+        "id": "just-cant-get-enough",
+        "title": "Just Can't Get Enough — single",
+        "category": "release",
+        "year": 1981,
+        "summary": "The evergreen.",
+        "story": "Recorded at Blackwing and released in September 1981, Vince Clarke's bubblegum masterpiece became the band's first top-10 hit — and forty years on, a football-terrace anthem sung by people who couldn't name the band."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "properties": {
+        "id": "alan-joins",
+        "title": "Alan Wilder joins",
+        "category": "milestone",
+        "year": 1982,
+        "approx": true,
+        "summary": "'Must be under 21.' He lied.",
+        "story": "Answering a Melody Maker ad seeking a synth player (under 21 only — Alan was 22), the classically trained Wilder auditioned in London and got the gig. He became the sonic architect of the band's greatest records."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-117.3956, 34.1764] },
+      "properties": {
+        "id": "us-festival",
+        "title": "US Festival, San Bernardino",
+        "category": "gig",
+        "year": 1983,
+        "approx": true,
+        "summary": "Playing to a sea of confused Californians.",
+        "story": "On 'New Wave Day' at the 1983 US Festival, the young band played to one of the biggest crowds of their life in the California desert — an early, surreal taste of the American scale to come."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.0813, 51.5066] },
+      "properties": {
+        "id": "people-are-people-video",
+        "title": "HMS Belfast, London",
+        "category": "video",
+        "year": 1984,
+        "summary": "People Are People — filmed on a warship.",
+        "story": "The video for the band's first US hit was shot aboard HMS Belfast on the Thames, its industrial clanks and naval guns matching the track's metal-bashing samples."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [9.9899, 53.6126] },
+      "properties": {
+        "id": "live-in-hamburg",
+        "title": "Alsterdorfer Sporthalle, Hamburg",
+        "category": "gig",
+        "year": 1984,
+        "summary": "The World We Live In and Live in Hamburg.",
+        "story": "The Some Great Reward tour's Hamburg stop was filmed for the band's first concert video — early proof of the German devotion that would define their career."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [139.6638, 35.7089] },
+      "properties": {
+        "id": "first-japan",
+        "title": "Tokyo, Japan",
+        "category": "gig",
+        "year": 1985,
+        "approx": true,
+        "summary": "First shows in Japan.",
+        "story": "The band's first Japanese dates in April 1985 opened up yet another devoted territory — the start of a relationship with Japan that continues to this day."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [9.19, 45.4642] },
+      "properties": {
+        "id": "personal-jesus-single",
+        "title": "Personal Jesus — single",
+        "category": "release",
+        "year": 1989,
+        "approx": true,
+        "summary": "Reach out and touch faith.",
+        "story": "Built around a blues guitar riff at Logic Studios in Milan and teased via newspaper ads reading 'Your own personal Jesus' with a phone number, it became one of the most covered songs in the catalogue — Johnny Cash and Marilyn Manson included."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [10.046, 56.5377] },
+      "properties": {
+        "id": "enjoy-the-silence-single",
+        "title": "Enjoy the Silence — single",
+        "category": "release",
+        "year": 1990,
+        "approx": true,
+        "summary": "The masterpiece's masterpiece.",
+        "story": "Martin wrote it as a slow ballad; Alan Wilder and Flood heard a dance track at Puk Studios and rebuilt it overnight. The result won the 1991 BRIT for Best Single and remains the band's defining song."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-4.5, 57.1] },
+      "properties": {
+        "id": "enjoy-the-silence-highlands",
+        "title": "Scottish Highlands",
+        "category": "video",
+        "year": 1990,
+        "approx": true,
+        "summary": "The king walks Scotland.",
+        "story": "The Scottish leg of Anton Corbijn's Enjoy the Silence shoot — Dave's wandering king crossing the Highlands with his deckchair, a long way from his kingdom."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.2399, 34.0739] },
+      "properties": {
+        "id": "dodger-stadium",
+        "title": "Dodger Stadium, Los Angeles",
+        "category": "gig",
+        "year": 1990,
+        "summary": "World Violation owns LA.",
+        "story": "Two sold-out nights at Dodger Stadium in August 1990 — around 90,000 tickets — confirmed Los Angeles as the band's American heartland, two years after the Rose Bowl."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-73.9934, 40.7505] },
+      "properties": {
+        "id": "msg",
+        "title": "Madison Square Garden, New York",
+        "category": "gig",
+        "year": 1990,
+        "summary": "A New York institution, era after era.",
+        "story": "From World Violation in 1990 through Tour of the Universe and Memento Mori, the Garden became the band's New York home — a venue they've filled across five decades."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [2.7706, 50.4221] },
+      "properties": {
+        "id": "devotional-lievin",
+        "title": "Stade Couvert, Liévin",
+        "category": "gig",
+        "year": 1993,
+        "summary": "The Devotional film.",
+        "story": "Anton Corbijn filmed the Devotional concert film at the band's December 1993 shows in this northern French arena — the band at their darkest, heaviest and, many fans argue, their absolute live peak."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-43.1965, -22.9132] },
+      "properties": {
+        "id": "hollywood-rock-rio",
+        "title": "Rio de Janeiro, Brazil",
+        "category": "gig",
+        "year": 1994,
+        "approx": true,
+        "summary": "The Exotic Tour reaches South America.",
+        "story": "January 1994 festival shows in Brazil brought the Devotional set to South America for the first time — another continent claimed by the Exotic Tour's exhausted, brilliant band."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.118, 51.508] },
+      "properties": {
+        "id": "alan-leaves",
+        "title": "Alan Wilder leaves",
+        "category": "milestone",
+        "year": 1995,
+        "approx": true,
+        "summary": "The architect departs.",
+        "story": "In June 1995, after the punishing Devotional era, Alan Wilder announced his departure, citing years of unequal workload. The band continued as a trio; he returned just once — joining Martin for Somebody at Royal Albert Hall in 2010."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1485, 51.4828] },
+      "properties": {
+        "id": "ultra-party",
+        "title": "Adrenalin Village, London",
+        "category": "milestone",
+        "year": 1997,
+        "approx": true,
+        "summary": "Ultra launches. The band survives.",
+        "story": "With no tour possible after Dave's recovery, Ultra launched with two 'Ultra Parties' — London and Los Angeles. Short sets, huge relief: Depeche Mode still existed."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-7.98, 31.63] },
+      "properties": {
+        "id": "barrel-of-a-gun-video",
+        "title": "Morocco",
+        "category": "video",
+        "year": 1997,
+        "approx": true,
+        "summary": "Barrel of a Gun — Corbijn in North Africa.",
+        "story": "Anton Corbijn shot the fevered, eye-painted Barrel of a Gun video in Morocco — the dark, disorientating image of the band's resurrection record."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [2.3786, 48.8384] },
+      "properties": {
+        "id": "one-night-in-paris",
+        "title": "Palais Omnisports de Paris-Bercy",
+        "category": "gig",
+        "year": 2001,
+        "summary": "One Night in Paris.",
+        "story": "The Exciter Tour's Paris stop was filmed by Anton Corbijn as 'One Night in Paris' — elegant, stripped back, and proof the band had grown into their third decade with style intact."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-118.2437, 34.0522] },
+      "properties": {
+        "id": "wrong-video",
+        "title": "Downtown Los Angeles",
+        "category": "video",
+        "year": 2009,
+        "approx": true,
+        "summary": "Wrong — the backwards car ride.",
+        "story": "A masked man strapped in a car rolling backwards through downtown LA at dawn — the unsettling, award-nominated Wrong video became one of the band's most talked-about late-era moments."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-90.0578, 29.9647] },
+      "properties": {
+        "id": "heaven-video",
+        "title": "Marigny Opera House, New Orleans",
+        "category": "video",
+        "year": 2013,
+        "summary": "Heaven — filmed in a ruined church.",
+        "story": "Timothy Saccenti shot the Heaven video in the candle-lit, deconsecrated Marigny Opera House — gospel atmosphere for Delta Machine's lead single, in the city that invented the mood."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [13.4539, 52.5054] },
+      "properties": {
+        "id": "live-in-berlin",
+        "title": "O2 World, Berlin",
+        "category": "gig",
+        "year": 2013,
+        "summary": "Live in Berlin.",
+        "story": "Anton Corbijn filmed the Delta Machine tour's Berlin nights for the 'Live in Berlin' film and album — the band returning, as always, to the city that shaped them."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-99.0976, 19.4042] },
+      "properties": {
+        "id": "foro-sol",
+        "title": "Foro Sol, Mexico City",
+        "category": "gig",
+        "year": 2013,
+        "approx": true,
+        "summary": "Mexican devotion.",
+        "story": "Mexico City's enormous Foro Sol shows — tens of thousands singing every word — cemented Mexico as one of the band's most passionate territories, revisited on every tour since."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.1276, 51.5072] },
+      "properties": {
+        "id": "fletch-farewell",
+        "title": "Remembering Fletch",
+        "category": "milestone",
+        "year": 2022,
+        "approx": true,
+        "summary": "Andy Fletcher, 1961–2022.",
+        "story": "Andy Fletcher died at home in London in May 2022, aged 60. The band's heart and quiet diplomat for 42 years, he was honoured nightly on the Memento Mori tour — 'Fletch would have loved this song.'"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "properties": {
+        "id": "ghosts-again-single",
+        "title": "Ghosts Again — single",
+        "category": "release",
+        "year": 2023,
+        "approx": true,
+        "summary": "Heaven's dreaming, ghosts again.",
+        "story": "Written with Richard Butler of the Psychedelic Furs and recorded in Santa Barbara, Ghosts Again gave the two-piece Depeche Mode their most beloved single in a decade — melancholy, danceable, defiantly alive."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-73.99, 40.735] },
+      "properties": {
+        "id": "ghosts-again-video",
+        "title": "New York rooftops",
+        "category": "video",
+        "year": 2023,
+        "approx": true,
+        "summary": "Ghosts Again — chess with death, gently.",
+        "story": "Anton Corbijn filmed Dave and Martin playing rooftop chess in New York — a tender Seventh Seal nod for a song about mortality, made by two men who had just lost their oldest friend."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.2199, 51.5273] },
+      "properties": {
+        "id": "vcmg-ssss",
+        "title": "VCMG — Ssss",
+        "category": "offshoot",
+        "year": 2012,
+        "artistId": "vcmg",
+        "approx": true,
+        "summary": "Clarke × Gore, reunited by email.",
+        "story": "Thirty years after Vince walked out, Clarke and Gore made a full-on techno album together for Mute — almost entirely by swapping files, barely in the same room. The most Depeche Mode reunion imaginable."
+      }
+    }
+  ]
+}

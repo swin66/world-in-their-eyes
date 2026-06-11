@@ -1,0 +1,72 @@
+{
+  "slug": "depeche-mode",
+  "name": "Depeche Mode",
+  "appTitle": "World in Their Eyes",
+  "tagline": "Let me take you on a trip",
+  "yearStart": 1959,
+  "yearEnd": 2026,
+  "defaultMode": "dark",
+  "themes": {
+    "dark": {
+      "accent": "#e3342f",
+      "accent2": "#8a7bd8",
+      "bg": "#0b0b0f",
+      "surface": "#15151c",
+      "text": "#f2f0eb",
+      "mapStyle": "https://api.maptiler.com/maps/dataviz-dark/style.json?key=kbM4ZTal9fF8ZdcNaK8y"
+    },
+    "light": {
+      "accent": "#c2231e",
+      "accent2": "#5f4cc0",
+      "bg": "#f3f1ea",
+      "surface": "#ffffff",
+      "text": "#1b1b22",
+      "mapStyle": "https://api.maptiler.com/maps/dataviz-light/style.json?key=kbM4ZTal9fF8ZdcNaK8y"
+    }
+  },
+  "map": {
+    "center": [0.4889, 51.5762],
+    "zoom": 4,
+    "attributionExtra": "Fan-made, non-commercial tribute. Not affiliated with the band."
+  },
+  "categories": {
+    "people": { "label": "The Band", "color": "#e964c8", "icon": "♥" },
+    "origins": { "label": "Origins", "color": "#e3342f", "icon": "◆" },
+    "release": { "label": "Releases", "color": "#8f96a3", "icon": "♪" },
+    "studio": { "label": "Studios", "color": "#8a7bd8", "icon": "●" },
+    "gig": { "label": "Live", "color": "#f5a623", "icon": "▲" },
+    "video": { "label": "Videos", "color": "#3ec9a7", "icon": "■" },
+    "milestone": { "label": "Milestones", "color": "#5aa7e8", "icon": "★" },
+    "offshoot": { "label": "Offshoots", "color": "#9ad14b", "icon": "✚" }
+  },
+  "auth": {
+    "providers": ["google", "apple"]
+  },
+  "gamification": {
+    "checkinLabel": "I made the pilgrimage",
+    "badges": [
+      { "id": "first-steps", "label": "New Life", "threshold": 1 },
+      { "id": "devotee", "label": "Devotee", "threshold": 5 },
+      { "id": "pilgrim", "label": "Pilgrim", "threshold": 12 },
+      { "id": "101", "label": "101", "threshold": 25 }
+    ],
+    "categoryBadges": [
+      { "category": "people", "label": "Family Album" },
+      { "category": "origins", "label": "Back to Basildon" },
+      { "category": "studio", "label": "Studio Rat" },
+      { "category": "gig", "label": "Front Row" },
+      { "category": "release", "label": "Record Collector" },
+      { "category": "video", "label": "Director's Cut" },
+      { "category": "milestone", "label": "History Buff" },
+      { "category": "offshoot", "label": "Extended Universe" }
+    ],
+    "levels": [
+      { "label": "New Life", "points": 0 },
+      { "label": "Photographic", "points": 40 },
+      { "label": "Everything Counts", "points": 100 },
+      { "label": "Music for the Masses", "points": 200 },
+      { "label": "World in My Eyes", "points": 350 },
+      { "label": "Personal Jesus", "points": 550 }
+    ]
+  }
+}
