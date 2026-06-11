@@ -67,16 +67,22 @@ Users get a dark/light toggle in the top bar; the map basemap switches with it (
 - `npm run import:setlistfm "Depeche Mode" -- --pages 50` — every concert ever played via the setlist.fm API (free key required), grouped into one place per venue with show counts and year spans. Review the output, then add `--merge` to fold into `places.json`.
 - `npm run enrich` — AI-written summaries and stories for imported placeholder places via the Claude API (`ANTHROPIC_API_KEY` required). Prompted to stay factual and general rather than invent specifics — still review before publishing.
 
-## Free hosting
+## Free hosting / deployment
 
-The build output (`dist/`) is fully static. Recommended:
+The build output (`dist/`) is fully static. A GitHub Actions workflow
+([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) deploys to
+**Cloudflare Pages** (free: unlimited bandwidth, custom domains) on every push
+to `main`. One-time setup:
 
-1. **Cloudflare Pages** (recommended) — unlimited free bandwidth, custom domain, deploys from GitHub on push.
-2. **Netlify / Vercel** — also fine; free tiers have bandwidth caps (100 GB/mo) but generous for a fan site.
+1. Cloudflare dashboard → My Profile → **API Tokens** → Create Token →
+   "Edit Cloudflare Workers" template (or custom with *Cloudflare Pages: Edit*).
+2. GitHub repo → Settings → Secrets and variables → Actions → add secret
+   **`CLOUDFLARE_API_TOKEN`** with that token.
+3. Re-run the failed workflow (Actions tab) or push any commit. The site
+   appears at `https://world-in-their-eyes.pages.dev`.
 
-```bash
-# Cloudflare Pages via GitHub: build command `npm run build`, output dir `dist`
-```
+When Supabase goes live, add `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
+as repository **variables** so production builds include accounts + sync.
 
 ## Roadmap
 

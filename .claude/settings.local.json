@@ -11,7 +11,10 @@
       "Bash(git init *)",
       "Bash(gh auth *)",
       "Bash(git add *)",
-      "Bash(git -c 'user.name=Paul Swindell' -c user.email=paul.swindell@scauk.org commit -m ' *)"
+      "Bash(git -c 'user.name=Paul Swindell' -c user.email=paul.swindell@scauk.org commit -m ' *)",
+      "Bash(gh repo *)",
+      "mcp__cloudflare__execute",
+      "Bash(git push *)"
     ]
   }
 }
