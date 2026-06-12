@@ -1,5 +1,6 @@
-// Planetarium backdrop for the story wall: the viewer sits inside a slowly
-// rotating sphere of glowing particles, looking out at the stories.
+// Backdrop for the story wall: the viewer sits inside a slowly rotating
+// sphere of band-themed icons (configured per band via band.json wallIcons —
+// roses and synths for Depeche Mode) over a faint dust layer for depth.
 // three.js is lazy-loaded only when a wall opens, so the main bundle stays
 // lean and the map never pays for it.
 
@@ -9,7 +10,9 @@ function cssColor(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
-export async function startWallFX(container) {
+const DEFAULT_ICONS = ['♪', '♫', '🎹', '💿', '🎤', '🎧'];
+
+export async function startWallFX(container, band) {
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   stopWallFX();
   const THREE = await import('three');
@@ -25,20 +28,7 @@ export async function startWallFX(container) {
   const camera = new THREE.PerspectiveCamera(75, 1, 0.1, 200);
   camera.position.set(0, 0, 0.1); // inside the sphere, looking out
 
-  // Soft round sprite so points glow instead of rendering as squares.
-  const spriteCanvas = document.createElement('canvas');
-  spriteCanvas.width = spriteCanvas.height = 64;
-  const ctx = spriteCanvas.getContext('2d');
-  const grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-  grad.addColorStop(0, 'rgba(255,255,255,1)');
-  grad.addColorStop(0.4, 'rgba(255,255,255,.55)');
-  grad.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 64, 64);
-  const sprite = new THREE.CanvasTexture(spriteCanvas);
-
-  // Shells of points (accent + neutral) at varied radii for depth.
-  const makeShell = (count, radiusMin, radiusMax, color, size, opacity) => {
+  const randomShellPositions = (count, radiusMin, radiusMax) => {
     const positions = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
       const r = radiusMin + Math.random() * (radiusMax - radiusMin);
@@ -48,19 +38,55 @@ export async function startWallFX(container) {
       positions[i * 3 + 1] = r * Math.cos(phi);
       positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
     }
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const material = new THREE.PointsMaterial({
-      color, size, transparent: true, opacity, sizeAttenuation: true, depthWrite: false,
-      map: sprite, blending: THREE.AdditiveBlending,
-    });
-    return new THREE.Points(geometry, material);
+    return positions;
+  };
+
+  const glyphTexture = (char) => {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const g = c.getContext('2d');
+    g.font = '96px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", serif';
+    g.textAlign = 'center';
+    g.textBaseline = 'middle';
+    // plain glyphs (♪) render in the theme text colour; emoji keep their own
+    g.fillStyle = cssColor('--text') || '#fff';
+    g.fillText(char, 64, 70);
+    return new THREE.CanvasTexture(c);
   };
 
   const group = new THREE.Group();
-  group.add(makeShell(900, 30, 70, cssColor('--accent2') || '#8a7bd8', 0.9, 0.85));
-  group.add(makeShell(500, 25, 65, cssColor('--accent') || '#e3342f', 0.8, 0.6));
-  group.add(makeShell(1400, 35, 80, cssColor('--text') || '#f2f0eb', 0.55, 0.4));
+  const disposables = [];
+
+  // Faint dust for depth behind the icons.
+  const dustGeometry = new THREE.BufferGeometry();
+  dustGeometry.setAttribute('position',
+    new THREE.BufferAttribute(randomShellPositions(700, 45, 85), 3));
+  const dustMaterial = new THREE.PointsMaterial({
+    color: cssColor('--accent2') || '#8a7bd8',
+    size: 0.4, transparent: true, opacity: 0.35,
+    sizeAttenuation: true, depthWrite: false,
+  });
+  group.add(new THREE.Points(dustGeometry, dustMaterial));
+  disposables.push(dustGeometry, dustMaterial);
+
+  // Band icons: one drifting constellation per glyph.
+  const icons = band?.wallIcons?.length ? band.wallIcons : DEFAULT_ICONS;
+  const layers = [];
+  for (const char of icons) {
+    const texture = glyphTexture(char);
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position',
+      new THREE.BufferAttribute(randomShellPositions(26, 26, 65), 3));
+    const material = new THREE.PointsMaterial({
+      map: texture, size: 6.5, transparent: true, opacity: 0.5,
+      sizeAttenuation: true, depthWrite: false,
+    });
+    const points = new THREE.Points(geometry, material);
+    points.rotation.set(Math.random(), Math.random() * Math.PI * 2, 0);
+    group.add(points);
+    layers.push({ points, speed: 0.0003 + Math.random() * 0.0005 });
+    disposables.push(texture, geometry, material);
+  }
   scene.add(group);
 
   let targetX = 0;
@@ -82,8 +108,8 @@ export async function startWallFX(container) {
 
   let raf;
   const animate = () => {
-    group.rotation.y += 0.00045;
-    group.rotation.z += 0.0001;
+    group.rotation.y += 0.0004;
+    for (const layer of layers) layer.points.rotation.y += layer.speed;
     camera.rotation.x += (targetX - camera.rotation.x) * 0.04;
     camera.rotation.y += (-targetY - camera.rotation.y) * 0.04;
     renderer.render(scene, camera);
@@ -96,11 +122,7 @@ export async function startWallFX(container) {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
       container.removeEventListener('pointermove', onPointer);
-      for (const shell of group.children) {
-        shell.geometry.dispose();
-        shell.material.dispose();
-      }
-      sprite.dispose();
+      for (const d of disposables) d.dispose();
       renderer.dispose();
       canvas.remove();
     },

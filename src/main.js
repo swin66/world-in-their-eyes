@@ -10,6 +10,7 @@ import { initAuth, getUser, syncCheckins, pushCheckin, renderAuthModal } from '.
 import { renderAdmin } from './admin.js';
 import { openWall, closeWall } from './wall.js';
 import { playIntro } from './intro.js';
+import { maybeOnboard } from './onboarding.js';
 
 const state = {
   band: null,
@@ -334,7 +335,11 @@ function featureById(id) {
   return state.places.features.find((f) => f.properties.id === id);
 }
 
-function openSheet(feature, zoomOverride) {
+function buzz(pattern) {
+  try { navigator.vibrate?.(pattern); } catch { /* not supported */ }
+}
+
+function openSheet(feature, zoomOverride, slideDir = 0) {
   stopSpin();
   const p = feature.properties;
   state.selectedId = p.id;
@@ -373,6 +378,12 @@ function openSheet(feature, zoomOverride) {
   body.querySelector('#checkin-btn').addEventListener('click', () => handleCheckin(feature));
   body.querySelector('#share-btn').addEventListener('click', () => shareFeature(p));
   body.querySelector('#add-memory-btn').addEventListener('click', () => openMemoryForm(feature));
+  if (slideDir) {
+    body.classList.remove('stop-anim');
+    void body.offsetWidth; // restart animation between consecutive stops
+    body.style.setProperty('--stop-dx', slideDir > 0 ? '28px' : '-28px');
+    body.classList.add('stop-anim');
+  }
   $('sheet').classList.add('sheet-open');
   state.map.flyTo({
     center: feature.geometry.coordinates,
@@ -536,6 +547,7 @@ function setTripPlaying(playing) {
   if (!state.trip) return;
   state.trip.playing = playing;
   $('trip-play').textContent = playing ? '⏸' : '▶';
+  syncTripCountdown();
   if (playing) scheduleAdvance();
   else clearTimeout(tripTimer);
 }
@@ -592,6 +604,15 @@ function drawTripLine(trip) {
   });
 }
 
+function syncTripCountdown() {
+  const cd = $('trip-countdown');
+  cd.classList.remove('trip-countdown-run');
+  if (!state.trip?.playing) return;
+  void cd.offsetWidth; // restart the CSS animation
+  cd.style.animationDuration = `${state.trip.seconds}s`;
+  cd.classList.add('trip-countdown-run');
+}
+
 function startTrip(trip) {
   stopSpin();
   const seconds = autoplaySeconds();
@@ -602,6 +623,7 @@ function startTrip(trip) {
   $('trip-bar').hidden = false;
   $('trip-title').textContent = `${trip.emoji} ${trip.title}`;
   $('trip-play').textContent = state.trip.playing ? '⏸' : '▶';
+  $('trip-progress').innerHTML = tripFeatures(trip).map(() => '<span></span>').join('');
   goToStop(0);
 }
 
@@ -621,10 +643,15 @@ function goToStop(index) {
     updateProgress();
     return;
   }
+  const dir = index > trip.index ? 1 : index < trip.index ? -1 : 0;
   trip.index = Math.max(0, index);
   const feature = features[trip.index];
-  $('trip-step').textContent = `Stop ${trip.index + 1} of ${features.length} — ${feature.properties.year}`;
-  openSheet(feature, 9);
+  $('trip-stop-title').textContent = feature.properties.title;
+  $('trip-step').textContent = `${trip.index + 1} / ${features.length} · ${feature.properties.year}`;
+  [...$('trip-progress').children].forEach((seg, i) =>
+    seg.classList.toggle('trip-seg-done', i <= trip.index));
+  openSheet(feature, 9, dir);
+  syncTripCountdown();
   scheduleAdvance();
 }
 
@@ -719,6 +746,7 @@ function celebrateDiff(before, after, fallbackMsg) {
   const newBadges = after.badges.filter((b, i) => b.earned && !before.badges[i].earned);
   if (newBadges.length) {
     confetti({ particleCount: 120, spread: 75, origin: { y: 0.7 }, zIndex: 100 });
+    buzz([20, 30, 20, 30, 80]);
     toast(`🏅 Badge unlocked: ${newBadges.map((b) => b.label).join(' + ')}`);
   } else {
     toast(fallbackMsg(after.points - before.points));
@@ -764,6 +792,7 @@ async function handleCheckin(feature) {
   state.streak.record();
   const onSite = !state.checkins.isVerified(p.id) && await tryVerifyLocation(feature);
   if (onSite) state.checkins.markVerified(p.id);
+  buzz(onSite ? [30, 50, 30] : 15);
   pushCheckin(state.band.slug, p.id, true, state.checkins.isVerified(p.id));
   refreshMapData();
   updateProgress();
@@ -939,7 +968,9 @@ async function init() {
   state.mode = localStorage.getItem(`wite:${band.slug}:mode`) || band.defaultMode || 'dark';
 
   applyTheme(band, state.mode);
+  const introWillPlay = !sessionStorage.getItem('wite:intro-played');
   playIntro(band); // runs over the top while the map loads beneath
+  setTimeout(() => maybeOnboard(band), introWillPlay ? 4400 : 1200);
   $('mode-btn').textContent = state.mode === 'dark' ? '◐' : '◑';
   buildFilters();
   buildTimeline();

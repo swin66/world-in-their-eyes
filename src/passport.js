@@ -115,9 +115,9 @@ export function renderPassport(container, progress, band, total, { onClose, onSh
         <span class="passport-level-label">Level</span>
         <strong>${level.label}</strong>
       </div>
-      <div class="passport-points">${points} pts</div>
+      <div class="passport-points">0 pts</div>
     </div>
-    <div class="level-bar"><span style="width:${pct}%"></span></div>
+    <div class="level-bar"><span style="width:0%"></span></div>
     <p class="modal-text dim">${nextLevel
       ? `${nextLevel.points - points} pts to “${nextLevel.label}”`
       : 'Top level reached. Total devotion.'} · ${visitedCount}/${total} places</p>
@@ -139,4 +139,23 @@ export function renderPassport(container, progress, band, total, { onClose, onSh
     </div>`;
   container.querySelector('[data-close]').addEventListener('click', onClose);
   container.querySelector('[data-share]').addEventListener('click', onShare);
+
+  // Count the points up and fill the level bar — small ceremony, every time.
+  const pointsEl = container.querySelector('.passport-points');
+  const t0 = performance.now();
+  const tick = (now) => {
+    const t = Math.min(1, (now - t0) / 700);
+    const eased = 1 - Math.pow(1 - t, 3);
+    pointsEl.textContent = `${Math.round(points * eased)} pts`;
+    if (t < 1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  requestAnimationFrame(() => {
+    container.querySelector('.level-bar span').style.width = `${pct}%`;
+  });
+  // rAF is throttled in hidden/background tabs — guarantee the final state.
+  setTimeout(() => {
+    pointsEl.textContent = `${points} pts`;
+    container.querySelector('.level-bar span').style.width = `${pct}%`;
+  }, 800);
 }

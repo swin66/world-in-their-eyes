@@ -42,6 +42,7 @@
   "auth": {
     "providers": ["google", "apple"]
   },
+  "wallIcons": ["🌹", "🎹", "♪", "💿", "🎤", "🎧"],
   "gamification": {
     "checkinLabel": "I made the pilgrimage",
     "contribution": { "label": "Add a memory", "points": 15, "mediaBonus": 10 },

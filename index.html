@@ -51,14 +51,21 @@
     </div>
 
     <div class="trip-bar" id="trip-bar" hidden>
-      <button class="trip-nav" id="trip-prev" aria-label="Previous stop">‹</button>
-      <button class="trip-info" id="trip-info" aria-label="Reopen current stop">
+      <span class="trip-countdown" id="trip-countdown"></span>
+      <div class="trip-head">
         <strong id="trip-title"></strong>
-        <span id="trip-step"></span>
-      </button>
-      <button class="trip-nav" id="trip-next" aria-label="Next stop">›</button>
-      <button class="trip-nav" id="trip-play" aria-label="Play or pause auto-advance">▶</button>
-      <button class="trip-nav trip-exit" id="trip-exit" aria-label="End trip">✕</button>
+        <button class="trip-nav trip-exit" id="trip-exit" aria-label="End trip">✕</button>
+      </div>
+      <div class="trip-progress" id="trip-progress" aria-hidden="true"></div>
+      <div class="trip-controls">
+        <button class="trip-nav" id="trip-prev" aria-label="Previous stop">‹</button>
+        <button class="trip-info" id="trip-info" aria-label="Reopen current stop">
+          <strong id="trip-stop-title"></strong>
+          <span id="trip-step"></span>
+        </button>
+        <button class="trip-nav trip-play" id="trip-play" aria-label="Play or pause auto-advance">▶</button>
+        <button class="trip-nav" id="trip-next" aria-label="Next stop">›</button>
+      </div>
     </div>
 
     <article class="sheet" id="sheet" aria-live="polite">

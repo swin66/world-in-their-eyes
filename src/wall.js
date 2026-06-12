@@ -64,5 +64,5 @@ export function openWall(features, state, { onSelect }) {
     });
   }
   wall.classList.add('wall-open');
-  startWallFX(wall);
+  startWallFX(wall, state.band);
 }

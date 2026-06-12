@@ -847,28 +847,85 @@ html, body, #app {
   left: 14px; right: 14px;
   bottom: calc(76px + var(--safe-bottom));
   z-index: 35; /* above the sheet so trip controls always stay reachable */
+  overflow: hidden;
+  background: var(--glass);
+  backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: var(--radius);
+  padding: 10px 12px 12px;
+  box-shadow: 0 10px 38px color-mix(in srgb, var(--accent) 22%, transparent),
+              0 4px 18px rgba(0, 0, 0, .35);
+}
+.trip-bar[hidden] { display: none; }
+.trip-countdown {
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 3px;
+  width: 0;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px;
+}
+.trip-countdown-run { animation: trip-countdown linear forwards; }
+@keyframes trip-countdown { to { width: 100%; } }
+.trip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.trip-head strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13px;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trip-progress {
+  display: flex;
+  gap: 4px;
+  margin: 8px 0;
+}
+.trip-progress span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+  transition: background .3s;
+}
+.trip-progress .trip-seg-done {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.trip-controls {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--glass);
-  backdrop-filter: blur(12px);
-  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
-  border-radius: var(--radius);
-  padding: 8px 10px;
 }
-.trip-bar[hidden] { display: none; }
 .trip-nav {
   flex: 0 0 auto;
-  width: 34px; height: 34px;
-  border-radius: 10px;
+  width: 38px; height: 38px;
+  border-radius: 12px;
   border: 1px solid var(--line);
-  background: transparent;
+  background: color-mix(in srgb, var(--text) 5%, transparent);
   color: var(--text);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
+  transition: transform .12s, border-color .2s;
 }
-.trip-exit { font-size: 13px; opacity: .7; }
+.trip-nav:active { transform: scale(.92); }
+.trip-play {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-size: 14px;
+}
+.trip-exit {
+  width: 28px; height: 28px;
+  font-size: 12px;
+  opacity: .7;
+  border-radius: 50%;
+}
 .trip-info {
   flex: 1;
   min-width: 0;
@@ -888,6 +945,71 @@ html, body, #app {
   text-overflow: ellipsis;
 }
 .trip-info span { font-size: 11px; opacity: .65; }
+
+/* Stop-to-stop slide on the sheet content during trips */
+.sheet-body.stop-anim {
+  animation: stop-in .45s cubic-bezier(.25, .8, .3, 1);
+}
+@keyframes stop-in {
+  from { opacity: 0; transform: translateX(var(--stop-dx, 28px)); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* ---------- Coach marks ---------- */
+.coach {
+  position: fixed;
+  z-index: 95;
+  width: min(320px, calc(100vw - 24px));
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--accent2) 55%, transparent);
+  border-radius: 16px;
+  padding: 15px 16px;
+  box-shadow: 0 14px 44px rgba(0, 0, 0, .45);
+  animation: coach-in .3s ease;
+}
+@keyframes coach-in { from { opacity: 0; transform: translateY(-8px); } }
+.coach strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+}
+.coach p {
+  margin: 6px 0 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  opacity: .85;
+}
+.coach-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.coach-skip {
+  background: none;
+  border: none;
+  color: var(--text);
+  opacity: .55;
+  font-size: 12.5px;
+  cursor: pointer;
+  padding: 6px 2px;
+}
+.coach-dots { flex: 1; text-align: center; }
+.coach-dots i {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  margin: 0 3px;
+  background: color-mix(in srgb, var(--text) 25%, transparent);
+}
+.coach-dots i.on { background: var(--accent); }
+.coach-next { flex: 0 0 auto; padding: 9px 16px; font-size: 13px; }
+.coach-glow {
+  outline: 2px solid var(--accent2);
+  outline-offset: 2px;
+  animation: coach-pulse 1.2s ease infinite;
+}
+@keyframes coach-pulse {
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--accent2) 30%, transparent); }
+}
 
 .maplibregl-ctrl-group button.home-ctrl {
   color: var(--text);
@@ -1028,7 +1150,7 @@ html, body, #app {
 /* ---------- Desktop ---------- */
 /* While a trip runs, lift the sheet's actions clear of the floating trip bar */
 @media (max-width: 719.9px) {
-  body[data-trip] .sheet-body { padding-bottom: 84px; }
+  body[data-trip] .sheet-body { padding-bottom: 132px; }
 }
 
 @media (min-width: 720px) {
