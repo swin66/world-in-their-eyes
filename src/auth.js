@@ -60,13 +60,14 @@ export async function syncCheckins(bandSlug, localIds) {
   return new Set([...remote, ...localIds]);
 }
 
-export async function pushCheckin(bandSlug, placeId, visited) {
+export async function pushCheckin(bandSlug, placeId, visited, verified = false) {
   if (!supabase || !currentUser) return;
   if (visited) {
     await supabase.from('checkins').upsert({
       user_id: currentUser.id,
       band_slug: bandSlug,
       place_id: placeId,
+      verified,
     });
   } else {
     await supabase.from('checkins').delete()

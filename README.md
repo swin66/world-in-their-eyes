@@ -39,7 +39,10 @@ Theme colours in `band.json` are injected as CSS variables at runtime, so the wh
 - **Points** — each check-in earns 10/15/25 pts based on distance from the band's hometown (a pilgrimage to Johannesburg beats a stroll through Basildon).
 - **Levels** — DM-flavoured ladder: New Life → Photographic → Everything Counts → Music for the Masses → World in My Eyes → Personal Jesus.
 - **Badges** — count-based (Devotee, Pilgrim, 101) plus completion badges per category (Studio Rat, Front Row, Record Collector, Extended Universe…).
-- **Pilgrimage Passport** — tap the progress ring: level, points bar, badge grid, share button. Confetti on badge unlocks and level-ups.
+- **Fan contributions** — every place has "Add a memory": stories, photos, ticket-stub scans, video and article links. Stored on-device (photos auto-shrunk), pushed to the moderated `memories` table when signed in, with other fans' approved items shown alongside. Contributions earn points and badges (Somebody → See You → Memento Mori).
+- **GPS-verified pilgrimages** — checking in physically near a place (within `verified.radiusKm`) triples the points and works toward Walking in My Shoes / Stripped badges.
+- **Streaks** — daily activity (check-ins or contributions) builds a streak; best-ever streak earns Get the Balance Right (3) → A Question of Time (7) → Never Let Me Down Again (30).
+- **Pilgrimage Passport** — tap the progress ring: level, points bar, streak/shared/verified stats, 20-badge grid, share button. Confetti on badge unlocks and level-ups.
 
 All of it is configured per-band in `band.json` → `gamification`.
 
@@ -74,10 +77,11 @@ The build output (`dist/`) is fully static. A GitHub Actions workflow
 **Cloudflare Pages** (free: unlimited bandwidth, custom domains) on every push
 to `main`. One-time setup:
 
-1. Cloudflare dashboard → My Profile → **API Tokens** → Create Token →
-   "Edit Cloudflare Workers" template (or custom with *Cloudflare Pages: Edit*).
-2. GitHub repo → Settings → Secrets and variables → Actions → add secret
-   **`CLOUDFLARE_API_TOKEN`** with that token.
+1. In your **personal** Cloudflare account: dashboard → My Profile → **API Tokens**
+   → Create Token → "Edit Cloudflare Workers" template (or custom with
+   *Cloudflare Pages: Edit*). Note your Account ID (dashboard right sidebar).
+2. GitHub repo → Settings → Secrets and variables → Actions → add secrets
+   **`CLOUDFLARE_API_TOKEN`** and **`CLOUDFLARE_ACCOUNT_ID`**.
 3. Re-run the failed workflow (Actions tab) or push any commit. The site
    appears at `https://world-in-their-eyes.pages.dev`.
 

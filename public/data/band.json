@@ -44,6 +44,25 @@
   },
   "gamification": {
     "checkinLabel": "I made the pilgrimage",
+    "contribution": { "label": "Add a memory", "points": 15, "mediaBonus": 10 },
+    "contributionBadges": [
+      { "id": "somebody", "label": "Somebody", "threshold": 1 },
+      { "id": "see-you", "label": "See You", "threshold": 5 },
+      { "id": "memento-mori", "label": "Memento Mori", "threshold": 15 }
+    ],
+    "streakBadges": [
+      { "id": "balance", "label": "Get the Balance Right", "days": 3 },
+      { "id": "question-of-time", "label": "A Question of Time", "days": 7 },
+      { "id": "nlmda", "label": "Never Let Me Down Again", "days": 30 }
+    ],
+    "verified": {
+      "radiusKm": 1,
+      "multiplier": 3,
+      "badges": [
+        { "id": "walking", "label": "Walking in My Shoes", "threshold": 1 },
+        { "id": "stripped", "label": "Stripped", "threshold": 5 }
+      ]
+    },
     "badges": [
       { "id": "first-steps", "label": "New Life", "threshold": 1 },
       { "id": "devotee", "label": "Devotee", "threshold": 5 },

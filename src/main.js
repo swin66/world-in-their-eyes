@@ -2,8 +2,9 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import confetti from 'canvas-confetti';
 import './style.css';
-import { createCheckins } from './gamification.js';
-import { computeProgress, renderPassport } from './passport.js';
+import { createCheckins, createStreak } from './gamification.js';
+import { computeProgress, renderPassport, haversineKm } from './passport.js';
+import { createContributions, KINDS, shrinkImage } from './contributions.js';
 import { supabase } from './supabase.js';
 import { initAuth, getUser, syncCheckins, pushCheckin, renderAuthModal } from './auth.js';
 import { renderAdmin } from './admin.js';
@@ -270,11 +271,32 @@ function buildTimeline() {
   update();
 }
 
+function memoriesHTML(placeId) {
+  const list = state.contributions.forPlace(placeId);
+  return `
+    <section class="memories">
+      <div class="memories-head">
+        <h3>Fan memories${list.length ? ` (${list.length})` : ''}</h3>
+        <button class="btn-mini" id="add-memory-btn">+ ${state.band.gamification.contribution?.label || 'Add a memory'}</button>
+      </div>
+      ${list.length ? `<div class="memories-list">
+        ${list.map((c) => `
+          <article class="memory">
+            <span class="memory-kind">${KINDS[c.kind]?.icon || '💭'} ${KINDS[c.kind]?.label || ''}</span>
+            ${c.text ? `<p>${c.text}</p>` : ''}
+            ${c.mediaUrl ? `<img src="${c.mediaUrl}" alt="" loading="lazy">` : ''}
+            ${c.url ? `<a href="${c.url}" target="_blank" rel="noopener">${c.url.replace(/^https?:\/\//, '').slice(0, 44)}…</a>` : ''}
+          </article>`).join('')}
+      </div>` : `<p class="memories-empty">Been here? Got a photo, a ticket stub, a story? Be the first to add one.</p>`}
+    </section>`;
+}
+
 function openSheet(feature) {
   const p = feature.properties;
   state.selectedId = p.id;
   const cat = state.band.categories[p.category] || {};
   const visited = state.checkins.has(p.id);
+  const isVerified = state.checkins.isVerified(p.id);
   const artist = p.artistId ? state.artists.get(p.artistId) : null;
   const body = $('sheet-body');
   body.innerHTML = `
@@ -283,6 +305,7 @@ function openSheet(feature) {
       <span>${cat.label || ''}</span>
       <span class="sheet-year">${p.year}</span>
       ${p.approx ? '<span class="sheet-approx">approximate location</span>' : ''}
+      ${isVerified ? '<span class="sheet-approx sheet-verified">📍 verified visit</span>' : ''}
     </div>
     <h2>${p.title}</h2>
     <p class="sheet-summary">${p.summary}</p>
@@ -293,6 +316,7 @@ function openSheet(feature) {
         <strong>${artist.name}</strong>
         <p>${artist.blurb}</p>
       </aside>` : ''}
+    ${memoriesHTML(p.id)}
     <div class="sheet-actions">
       <button class="btn btn-primary" id="checkin-btn">
         ${visited ? '✓ Visited' : state.band.gamification.checkinLabel}
@@ -302,6 +326,7 @@ function openSheet(feature) {
   `;
   body.querySelector('#checkin-btn').addEventListener('click', () => handleCheckin(feature));
   body.querySelector('#share-btn').addEventListener('click', () => shareFeature(p));
+  body.querySelector('#add-memory-btn').addEventListener('click', () => openMemoryForm(feature));
   $('sheet').classList.add('sheet-open');
   state.map.flyTo({
     center: feature.geometry.coordinates,
@@ -311,23 +336,27 @@ function openSheet(feature) {
   });
 }
 
-function handleCheckin(feature) {
-  const p = feature.properties;
-  const before = computeProgress(state.checkins.asSet(), state.places, state.band);
-  const nowVisited = state.checkins.toggle(p.id);
-  pushCheckin(state.band.slug, p.id, nowVisited);
-  refreshMapData();
-  updateProgress();
-  openSheet(feature);
-  if (!nowVisited) return;
-  const after = computeProgress(state.checkins.asSet(), state.places, state.band);
+function progressExtras() {
+  return {
+    verified: state.checkins.verifiedSet(),
+    contributions: state.contributions.count(),
+    mediaContributions: state.contributions.mediaCount(),
+    streakBest: state.streak.best(),
+    streakNow: state.streak.current(),
+  };
+}
+
+function snapshotProgress() {
+  return computeProgress(state.checkins.asSet(), state.places, state.band, progressExtras());
+}
+
+function celebrateDiff(before, after, fallbackMsg) {
   const newBadges = after.badges.filter((b, i) => b.earned && !before.badges[i].earned);
   if (newBadges.length) {
     confetti({ particleCount: 120, spread: 75, origin: { y: 0.7 }, zIndex: 100 });
     toast(`🏅 Badge unlocked: ${newBadges.map((b) => b.label).join(' + ')}`);
   } else {
-    const gained = after.points - before.points;
-    toast(`+${gained} pts — checked in at ${p.title}`);
+    toast(fallbackMsg(after.points - before.points));
   }
   if (after.level !== before.level) {
     setTimeout(() => {
@@ -335,6 +364,110 @@ function handleCheckin(feature) {
       toast(`⬆ Level up: ${after.level.label}`);
     }, 2700);
   }
+}
+
+// GPS verification: quietly checks whether the fan is actually standing there.
+function tryVerifyLocation(feature) {
+  const radius = state.band.gamification.verified?.radiusKm || 1;
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(false);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const km = haversineKm(
+          [pos.coords.longitude, pos.coords.latitude],
+          feature.geometry.coordinates,
+        );
+        resolve(km <= radius);
+      },
+      () => resolve(false),
+      { timeout: 5000, maximumAge: 300000 },
+    );
+  });
+}
+
+async function handleCheckin(feature) {
+  const p = feature.properties;
+  const before = snapshotProgress();
+  const nowVisited = state.checkins.toggle(p.id);
+  if (!nowVisited) {
+    pushCheckin(state.band.slug, p.id, false);
+    refreshMapData();
+    updateProgress();
+    openSheet(feature);
+    return;
+  }
+  state.streak.record();
+  const onSite = !state.checkins.isVerified(p.id) && await tryVerifyLocation(feature);
+  if (onSite) state.checkins.markVerified(p.id);
+  pushCheckin(state.band.slug, p.id, true, state.checkins.isVerified(p.id));
+  refreshMapData();
+  updateProgress();
+  openSheet(feature);
+  const after = snapshotProgress();
+  celebrateDiff(before, after, (gained) => onSite
+    ? `📍 Verified pilgrimage! +${gained} pts at ${p.title}`
+    : `+${gained} pts — checked in at ${p.title}`);
+  if (onSite) confetti({ particleCount: 80, spread: 60, origin: { y: 0.75 }, zIndex: 100 });
+}
+
+function openMemoryForm(feature) {
+  const p = feature.properties;
+  openModal((card, close) => {
+    card.innerHTML = `
+      <h2>Add to ${p.title}</h2>
+      <p class="modal-text dim">Memories, photos, ticket stubs, videos, articles — anything that belongs here.</p>
+      <div class="admin-row">
+        <select id="mem-kind">
+          ${Object.entries(KINDS).map(([k, v]) => `<option value="${k}">${v.icon} ${v.label}</option>`).join('')}
+        </select>
+      </div>
+      <textarea id="mem-text" rows="3" placeholder="What happened here, for you?"
+        style="width:100%;background:color-mix(in srgb, var(--text) 7%, transparent);border:1px solid var(--line);border-radius:12px;padding:11px 13px;color:var(--text);font:inherit;font-size:14px"></textarea>
+      <div class="admin-row" id="mem-file-row">
+        <label class="btn" style="text-align:center">📷 Add a photo / scan
+          <input type="file" id="mem-file" accept="image/*" hidden>
+        </label>
+      </div>
+      <div class="admin-row" id="mem-url-row" hidden>
+        <input type="text" id="mem-url" placeholder="https:// link to the video or article">
+      </div>
+      <img id="mem-preview" hidden style="max-width:100%;border-radius:12px;margin-bottom:10px">
+      <div class="sheet-actions">
+        <button class="btn" data-cancel>Cancel</button>
+        <button class="btn btn-primary" data-save>Share it</button>
+      </div>`;
+    let mediaUrl = null;
+    const kindSel = card.querySelector('#mem-kind');
+    const syncRows = () => {
+      const k = kindSel.value;
+      card.querySelector('#mem-url-row').hidden = !(k === 'video' || k === 'article');
+      card.querySelector('#mem-file-row').hidden = (k === 'video' || k === 'article');
+    };
+    kindSel.addEventListener('change', syncRows);
+    syncRows();
+    card.querySelector('#mem-file').addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      mediaUrl = await shrinkImage(file);
+      const img = card.querySelector('#mem-preview');
+      img.src = mediaUrl;
+      img.hidden = false;
+    });
+    card.querySelector('[data-cancel]').addEventListener('click', close);
+    card.querySelector('[data-save]').addEventListener('click', () => {
+      const text = card.querySelector('#mem-text').value.trim();
+      const url = card.querySelector('#mem-url').value.trim();
+      if (!text && !mediaUrl && !url) { toast('Add a few words, a photo or a link first'); return; }
+      const before = snapshotProgress();
+      state.contributions.add({ placeId: p.id, kind: kindSel.value, text, mediaUrl, url: url || null });
+      state.streak.record();
+      close();
+      openSheet(feature);
+      const after = snapshotProgress();
+      celebrateDiff(before, after, (gained) => `+${gained} pts — thank you for sharing`);
+      updateProgress();
+    });
+  });
 }
 
 function closeSheet() {
@@ -385,7 +518,7 @@ function openModal(render) {
 }
 
 function openPassport() {
-  const progress = computeProgress(state.checkins.asSet(), state.places, state.band);
+  const progress = snapshotProgress();
   openModal((card, close) => {
     renderPassport(card, progress, state.band, state.places.features.length, {
       onClose: close,
@@ -433,6 +566,9 @@ async function init() {
   state.places = places;
   state.artists = new Map(artists.map((a) => [a.id, a]));
   state.checkins = createCheckins(band.slug);
+  state.streak = createStreak(band.slug);
+  state.contributions = createContributions(band.slug);
+  state.contributions.loadRemote(places.features.map((f) => f.properties.id)).catch(() => {});
   state.mode = localStorage.getItem(`wite:${band.slug}:mode`) || band.defaultMode || 'dark';
 
   applyTheme(band, state.mode);

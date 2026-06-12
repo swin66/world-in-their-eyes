@@ -2,7 +2,7 @@
 // Distance from the band's home town earns bigger points: a pilgrimage to
 // Johannesburg should count for more than a stroll through Basildon.
 
-function haversineKm([lng1, lat1], [lng2, lat2]) {
+export function haversineKm([lng1, lat1], [lng2, lat2]) {
   const R = 6371;
   const toRad = (d) => (d * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -19,9 +19,12 @@ export function pointsFor(feature, home) {
   return 10;
 }
 
-export function computeProgress(visited, places, band) {
+// extras: { verified: Set, contributions, mediaContributions, streakBest, streakNow }
+export function computeProgress(visited, places, band, extras = {}) {
   const home = band.map.center;
   const gam = band.gamification;
+  const verified = extras.verified || new Set();
+  const multiplier = gam.verified?.multiplier || 1;
   let points = 0;
   const byCategory = {};
   for (const f of places.features) {
@@ -30,9 +33,13 @@ export function computeProgress(visited, places, band) {
     byCategory[p.category].total += 1;
     if (visited.has(p.id)) {
       byCategory[p.category].visited += 1;
-      points += pointsFor(f, home);
+      points += pointsFor(f, home) * (verified.has(p.id) ? multiplier : 1);
     }
   }
+  const contributions = extras.contributions || 0;
+  const mediaContributions = extras.mediaContributions || 0;
+  points += contributions * (gam.contribution?.points || 0)
+    + mediaContributions * (gam.contribution?.mediaBonus || 0);
 
   const badges = [
     ...gam.badges.map((b) => ({
@@ -51,6 +58,24 @@ export function computeProgress(visited, places, band) {
         earned: cat.total > 0 && cat.visited === cat.total,
       };
     }),
+    ...(gam.contributionBadges || []).map((b) => ({
+      id: b.id,
+      label: b.label,
+      desc: `Share ${b.threshold} memor${b.threshold > 1 ? 'ies' : 'y'}, photo${b.threshold > 1 ? 's' : ''} or finds`,
+      earned: contributions >= b.threshold,
+    })),
+    ...(gam.streakBadges || []).map((b) => ({
+      id: b.id,
+      label: b.label,
+      desc: `${b.days}-day activity streak`,
+      earned: (extras.streakBest || 0) >= b.days,
+    })),
+    ...(gam.verified?.badges || []).map((b) => ({
+      id: b.id,
+      label: b.label,
+      desc: `Check in on location ${b.threshold > 1 ? `${b.threshold} times` : 'once'} (GPS-verified)`,
+      earned: verified.size >= b.threshold,
+    })),
   ];
 
   const levels = gam.levels || [];
@@ -61,7 +86,13 @@ export function computeProgress(visited, places, band) {
     else { nextLevel = l; break; }
   }
 
-  return { points, level, nextLevel, badges, byCategory, visitedCount: visited.size };
+  return {
+    points, level, nextLevel, badges, byCategory,
+    visitedCount: visited.size,
+    verifiedCount: verified.size,
+    contributions,
+    streakNow: extras.streakNow || 0,
+  };
 }
 
 export function renderPassport(container, progress, band, total, { onClose, onShare }) {
@@ -82,6 +113,11 @@ export function renderPassport(container, progress, band, total, { onClose, onSh
     <p class="modal-text dim">${nextLevel
       ? `${nextLevel.points - points} pts to “${nextLevel.label}”`
       : 'Top level reached. Total devotion.'} · ${visitedCount}/${total} places</p>
+    <div class="passport-stats">
+      <span>🔥 ${progress.streakNow} day streak</span>
+      <span>✍️ ${progress.contributions} shared</span>
+      <span>📍 ${progress.verifiedCount} verified</span>
+    </div>
     <div class="badge-grid">
       ${badges.map((b) => `
         <div class="badge ${b.earned ? 'badge-earned' : ''}" title="${b.desc}">
