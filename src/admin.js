@@ -37,6 +37,7 @@ export function renderAdmin(container, state, helpers) {
         <button class="admin-tab ${tab === 'theme' ? 'admin-tab-active' : ''}" data-tab="theme">Theme</button>
         <button class="admin-tab ${tab === 'places' ? 'admin-tab-active' : ''}" data-tab="places">Places</button>
         <button class="admin-tab ${tab === 'import' ? 'admin-tab-active' : ''}" data-tab="import">Import</button>
+        <button class="admin-tab ${tab === 'moderate' ? 'admin-tab-active' : ''}" data-tab="moderate">Moderation</button>
       </div>
       <div id="admin-body"></div>`;
     for (const btn of container.querySelectorAll('.admin-tab')) {
@@ -45,6 +46,7 @@ export function renderAdmin(container, state, helpers) {
     const body = container.querySelector('#admin-body');
     if (tab === 'theme') renderThemeTab(body, state, helpers, role);
     else if (tab === 'places') renderPlacesTab(body, state, helpers, role);
+    else if (tab === 'moderate') renderModerationTab(body, state, helpers, role);
     else renderImportTab(body, state, helpers, role);
   };
   render();
@@ -209,6 +211,72 @@ function renderPlacesTab(body, state, { toast, refreshData }, role) {
     toast('places.json downloaded — replace public/data/places.json and deploy');
   });
   renderList();
+}
+
+function renderModerationTab(body, state, { toast }, role) {
+  if (!supabase) {
+    body.innerHTML = `
+      <p class="modal-text">Moderation needs the cloud backend. Fan submissions only
+      reach other people once Supabase is connected — until then everything stays on
+      each fan's own device, so there's nothing to review.</p>
+      <p class="modal-text dim">Set up Supabase (see the README), sign in as admin or
+      editor, and this tab becomes the approval queue for memories, photos, ticket
+      stubs and links.</p>`;
+    return;
+  }
+
+  const placeTitle = (id) =>
+    state.places.features.find((f) => f.properties.id === id)?.properties.title || id;
+
+  const load = async () => {
+    body.innerHTML = '<p class="modal-text dim">Loading pending submissions…</p>';
+    const { data, error } = await supabase
+      .from('memories')
+      .select('id, place_id, kind, body, photo_url, link_url, created_at')
+      .eq('approved', false)
+      .order('created_at', { ascending: true })
+      .limit(100);
+    if (error) {
+      body.innerHTML = `<p class="modal-text">Couldn't load the queue: ${error.message}</p>`;
+      return;
+    }
+    if (!data.length) {
+      body.innerHTML = '<p class="modal-text dim">Queue is clear — nothing awaiting review. 🎉</p>';
+      return;
+    }
+    body.innerHTML = `
+      <p class="modal-text dim">${data.length} submission${data.length > 1 ? 's' : ''} awaiting review.
+      Approved items become visible to everyone; rejected ones are deleted.</p>
+      <div class="memories-list">
+        ${data.map((m) => `
+          <article class="memory" data-id="${m.id}">
+            <span class="memory-kind">${m.kind || 'memory'} · ${placeTitle(m.place_id)} ·
+              ${new Date(m.created_at).toLocaleDateString()}</span>
+            ${m.body ? `<p>${m.body}</p>` : ''}
+            ${m.photo_url ? `<img src="${m.photo_url}" alt="" loading="lazy">` : ''}
+            ${m.link_url ? `<a href="${m.link_url}" target="_blank" rel="noopener">${m.link_url}</a>` : ''}
+            <div class="sheet-actions" style="margin-top:10px">
+              <button class="btn" data-reject>Reject</button>
+              <button class="btn btn-primary" data-approve>Approve</button>
+            </div>
+          </article>`).join('')}
+      </div>`;
+    for (const card of body.querySelectorAll('.memory')) {
+      const id = card.dataset.id;
+      card.querySelector('[data-approve]').addEventListener('click', async () => {
+        const { error: err } = await supabase.from('memories')
+          .update({ approved: true }).eq('id', id);
+        toast(err ? `Approve failed: ${err.message}` : 'Approved — now public');
+        if (!err) card.remove();
+      });
+      card.querySelector('[data-reject]').addEventListener('click', async () => {
+        const { error: err } = await supabase.from('memories').delete().eq('id', id);
+        toast(err ? `Reject failed: ${err.message}` : 'Rejected and removed');
+        if (!err) card.remove();
+      });
+    }
+  };
+  load();
 }
 
 function renderImportTab(body, state, { toast }, role) {

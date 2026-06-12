@@ -115,8 +115,14 @@ create policy "own checkins read" on public.checkins for select using (auth.uid(
 create policy "own checkins insert" on public.checkins for insert with check (auth.uid() = user_id);
 create policy "own checkins delete" on public.checkins for delete using (auth.uid() = user_id);
 
--- Memories: approved ones are public, authors see and manage their own.
+-- Memories: approved ones are public, authors see and manage their own,
+-- admins/editors moderate everything (read pending, approve, reject).
 create policy "read approved memories" on public.memories for select
-  using (approved or auth.uid() = user_id);
+  using (approved or auth.uid() = user_id or public.app_role() in ('admin', 'editor'));
 create policy "submit memories" on public.memories for insert with check (auth.uid() = user_id);
 create policy "delete own memories" on public.memories for delete using (auth.uid() = user_id);
+create policy "moderate memories update" on public.memories for update
+  using (public.app_role() in ('admin', 'editor'))
+  with check (public.app_role() in ('admin', 'editor'));
+create policy "moderate memories delete" on public.memories for delete
+  using (public.app_role() in ('admin', 'editor'));
