@@ -9,6 +9,7 @@ import { supabase } from './supabase.js';
 import { initAuth, getUser, syncCheckins, pushCheckin, renderAuthModal } from './auth.js';
 import { renderAdmin } from './admin.js';
 import { openWall, closeWall } from './wall.js';
+import { playIntro } from './intro.js';
 
 const state = {
   band: null,
@@ -369,6 +370,26 @@ function ensureTripLayer() {
   }, map.getLayer('clusters') ? 'clusters' : undefined);
 }
 
+// "Marching ants" glow along the active trip route.
+const DASH_FRAMES = [
+  [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5],
+  [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0], [0, 0.5, 3, 3.5],
+];
+let dashTimer = null;
+function startTripDash() {
+  stopTripDash();
+  let frame = 0;
+  dashTimer = setInterval(() => {
+    if (!state.map.getLayer('trip-line')) return;
+    frame = (frame + 1) % DASH_FRAMES.length;
+    state.map.setPaintProperty('trip-line', 'line-dasharray', DASH_FRAMES[frame]);
+  }, 90);
+}
+function stopTripDash() {
+  clearInterval(dashTimer);
+  dashTimer = null;
+}
+
 function drawTripLine(trip) {
   ensureTripLayer();
   state.map.getSource('trip').setData({
@@ -379,7 +400,9 @@ function drawTripLine(trip) {
 
 function startTrip(trip) {
   state.trip = { def: trip, index: 0 };
+  document.body.dataset.trip = '1';
   drawTripLine(trip);
+  startTripDash();
   $('trip-bar').hidden = false;
   $('trip-title').textContent = `${trip.emoji} ${trip.title}`;
   goToStop(0);
@@ -409,6 +432,8 @@ function goToStop(index) {
 
 function exitTrip() {
   state.trip = null;
+  delete document.body.dataset.trip;
+  stopTripDash();
   $('trip-bar').hidden = true;
   state.map.getSource('trip')?.setData(
     { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
@@ -703,6 +728,7 @@ async function init() {
   state.mode = localStorage.getItem(`wite:${band.slug}:mode`) || band.defaultMode || 'dark';
 
   applyTheme(band, state.mode);
+  playIntro(band); // runs over the top while the map loads beneath
   $('mode-btn').textContent = state.mode === 'dark' ? '◐' : '◑';
   buildFilters();
   buildTimeline();
