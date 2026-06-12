@@ -25,6 +25,7 @@
           <span class="progress-ring" id="progress-ring"></span>
           <span id="progress-count">0</span>
         </button>
+        <button class="account-btn" id="trips-btn" aria-label="Guided trips">🧭</button>
         <button class="account-btn" id="mode-btn" aria-label="Toggle light or dark mode">◐</button>
         <button class="account-btn" id="account-btn" aria-label="Account">☻</button>
       </div>
@@ -41,6 +42,16 @@
         <input type="range" id="timeline-from" aria-label="Show places from year" />
         <input type="range" id="timeline-to" aria-label="Show places up to year" />
       </div>
+    </div>
+
+    <div class="trip-bar" id="trip-bar" hidden>
+      <button class="trip-nav" id="trip-prev" aria-label="Previous stop">‹</button>
+      <button class="trip-info" id="trip-info" aria-label="Reopen current stop">
+        <strong id="trip-title"></strong>
+        <span id="trip-step"></span>
+      </button>
+      <button class="trip-nav" id="trip-next" aria-label="Next stop">›</button>
+      <button class="trip-nav trip-exit" id="trip-exit" aria-label="End trip">✕</button>
     </div>
 
     <article class="sheet" id="sheet" aria-live="polite">

@@ -88,6 +88,16 @@ to `main`. One-time setup:
 When Supabase goes live, add `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
 as repository **variables** so production builds include accounts + sync.
 
+## Trips (guided journeys)
+
+The 🧭 button opens **Trips** — curated journeys that fly stop-to-stop with a
+route line on the map and prev/next controls, so fans can experience the story
+without hunting: *From Basildon, With Synths*, *Every Album, In Order*,
+*Conquering America*, *The Berlin Years*, *Through Corbijn's Lens*, member
+journeys and more. Defined in [trips.json](public/data/trips.json) as ordered
+lists of place ids — fully band-configurable. A ⌂ home control on the map
+resets the view (and exits any running trip).
+
 ## Roadmap
 
 **Phase 2 — community backend (still free):** [Supabase](https://supabase.com/) free tier (Postgres + auth + storage). Moves check-ins server-side, adds user accounts, fan-submitted photos/memories per place (moderation queue), and global leaderboards. `src/gamification.js` is already isolated so the localStorage store can be swapped for Supabase calls without touching the UI.

@@ -13,6 +13,8 @@ import { openWall, closeWall } from './wall.js';
 const state = {
   band: null,
   places: null,
+  trips: [],
+  trip: null, // { def, index } while a guided trip is running
   artists: new Map(),
   activeCategories: new Set(),
   minYear: 0,
@@ -33,10 +35,11 @@ async function loadJSON(url) {
 // Prefer database content when Supabase is configured and seeded;
 // otherwise fall back to the static JSON shipped with the site.
 async function loadData() {
-  const [band, placesJson, artistsJson] = await Promise.all([
+  const [band, placesJson, artistsJson, tripsJson] = await Promise.all([
     loadJSON('/data/band.json'),
     loadJSON('/data/places.json'),
     loadJSON('/data/artists.json'),
+    loadJSON('/data/trips.json').catch(() => ({ trips: [] })),
   ]);
   let places = placesJson;
   let artists = artistsJson.artists;
@@ -61,7 +64,7 @@ async function loadData() {
     }
     if (artistsRes.data?.length) artists = artistsRes.data;
   }
-  return { band, places, artists };
+  return { band, places, artists, trips: tripsJson.trips || [] };
 }
 
 /* ---------- Theming ---------- */
@@ -291,7 +294,11 @@ function memoriesHTML(placeId) {
     </section>`;
 }
 
-function openSheet(feature) {
+function featureById(id) {
+  return state.places.features.find((f) => f.properties.id === id);
+}
+
+function openSheet(feature, zoomOverride) {
   const p = feature.properties;
   state.selectedId = p.id;
   const cat = state.band.categories[p.category] || {};
@@ -330,10 +337,124 @@ function openSheet(feature) {
   $('sheet').classList.add('sheet-open');
   state.map.flyTo({
     center: feature.geometry.coordinates,
-    zoom: Math.max(state.map.getZoom(), 6),
+    zoom: zoomOverride ?? Math.max(state.map.getZoom(), 6),
     padding: { bottom: 260 },
-    duration: 900,
+    duration: zoomOverride ? 1600 : 900,
   });
+}
+
+/* ---------- Trips (guided journeys) ---------- */
+
+function tripFeatures(trip) {
+  return trip.stops.map(featureById).filter(Boolean);
+}
+
+function ensureTripLayer() {
+  const map = state.map;
+  if (map.getSource('trip')) return;
+  map.addSource('trip', {
+    type: 'geojson',
+    data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } },
+  });
+  map.addLayer({
+    id: 'trip-line',
+    type: 'line',
+    source: 'trip',
+    paint: {
+      'line-color': currentTheme().accent,
+      'line-width': 2.5,
+      'line-dasharray': [0.8, 1.6],
+      'line-opacity': 0.85,
+    },
+  }, map.getLayer('clusters') ? 'clusters' : undefined);
+}
+
+function drawTripLine(trip) {
+  ensureTripLayer();
+  state.map.getSource('trip').setData({
+    type: 'Feature',
+    geometry: { type: 'LineString', coordinates: tripFeatures(trip).map((f) => f.geometry.coordinates) },
+  });
+}
+
+function startTrip(trip) {
+  state.trip = { def: trip, index: 0 };
+  drawTripLine(trip);
+  $('trip-bar').hidden = false;
+  $('trip-title').textContent = `${trip.emoji} ${trip.title}`;
+  goToStop(0);
+}
+
+function goToStop(index) {
+  const trip = state.trip;
+  if (!trip) return;
+  const features = tripFeatures(trip.def);
+  if (index >= features.length) {
+    confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 }, zIndex: 100 });
+    toast(`🧭 Trip complete: ${trip.def.title}`);
+    exitTrip();
+    return;
+  }
+  trip.index = Math.max(0, index);
+  const feature = features[trip.index];
+  $('trip-step').textContent = `Stop ${trip.index + 1} of ${features.length} — ${feature.properties.year}`;
+  openSheet(feature, 9);
+}
+
+function exitTrip() {
+  state.trip = null;
+  $('trip-bar').hidden = true;
+  state.map.getSource('trip')?.setData(
+    { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
+  closeSheet();
+}
+
+function openTrips() {
+  openModal((card, close) => {
+    card.innerHTML = `
+      <h2>Take a trip</h2>
+      <p class="modal-text dim">Guided journeys through the story — sit back, press next.</p>
+      <div class="trip-list">
+        ${state.trips.map((t) => {
+          const stops = tripFeatures(t);
+          const visited = stops.filter((f) => state.checkins.has(f.properties.id)).length;
+          return `
+            <button class="trip-card" data-id="${t.id}">
+              <span class="trip-emoji">${t.emoji}</span>
+              <span class="trip-card-body">
+                <strong>${t.title}</strong>
+                <p>${t.description}</p>
+                <small>${stops.length} stops · ${visited}/${stops.length} visited</small>
+              </span>
+            </button>`;
+        }).join('')}
+      </div>`;
+    for (const btn of card.querySelectorAll('.trip-card')) {
+      btn.addEventListener('click', () => {
+        const trip = state.trips.find((t) => t.id === btn.dataset.id);
+        close();
+        if (trip) startTrip(trip);
+      });
+    }
+  });
+}
+
+class HomeControl {
+  constructor(onClick) { this._onClick = onClick; }
+  onAdd() {
+    this._container = document.createElement('div');
+    this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.title = 'Reset view';
+    btn.setAttribute('aria-label', 'Reset map to start');
+    btn.textContent = '⌂';
+    btn.className = 'home-ctrl';
+    btn.addEventListener('click', this._onClick);
+    this._container.appendChild(btn);
+    return this._container;
+  }
+  onRemove() { this._container.remove(); }
 }
 
 function progressExtras() {
@@ -561,9 +682,10 @@ async function onSessionChange(user) {
 /* ---------- Boot ---------- */
 
 async function init() {
-  const { band, places, artists } = await loadData();
+  const { band, places, artists, trips } = await loadData();
   state.band = band;
   state.places = places;
+  state.trips = trips;
   state.artists = new Map(artists.map((a) => [a.id, a]));
   state.checkins = createCheckins(band.slug);
   state.streak = createStreak(band.slug);
@@ -588,6 +710,11 @@ async function init() {
   state.map = map;
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
   map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: true }), 'bottom-right');
+  map.addControl(new HomeControl(() => {
+    if (state.trip) exitTrip();
+    closeSheet();
+    map.flyTo({ center: band.map.center, zoom: band.map.zoom, duration: 1400 });
+  }), 'bottom-right');
   map.on('click', (e) => {
     // Only close the sheet when the click wasn't on a point/cluster
     const hits = map.queryRenderedFeatures(e.point, { layers: ['points', 'clusters'].filter((l) => map.getLayer(l)) });
@@ -598,13 +725,21 @@ async function init() {
   map.on('style.load', () => {
     map.setProjection({ type: 'globe' });
     addDataLayers();
+    if (state.trip) drawTripLine(state.trip.def); // survive mode toggles
   });
   bindMapInteractions();
+  // Belt-and-braces: some embedded webviews don't fire MapLibre's own observer
+  window.addEventListener('resize', () => map.resize());
 
   $('progress-pill').addEventListener('click', openPassport);
   $('account-btn').addEventListener('click', openAccount);
   $('mode-btn').addEventListener('click', () =>
     setMode(state.mode === 'dark' ? 'light' : 'dark'));
+  $('trips-btn').addEventListener('click', openTrips);
+  $('trip-prev').addEventListener('click', () => goToStop(state.trip.index - 1));
+  $('trip-next').addEventListener('click', () => goToStop(state.trip.index + 1));
+  $('trip-exit').addEventListener('click', exitTrip);
+  $('trip-info').addEventListener('click', () => goToStop(state.trip.index));
 
   // Deep link: /#place-id opens that place
   const hashId = location.hash.slice(1);

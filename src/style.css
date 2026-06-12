@@ -649,6 +649,89 @@ html, body, #app {
   margin-left: 8px;
 }
 
+/* ---------- Trips ---------- */
+.trip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 12px;
+}
+.trip-card {
+  display: flex;
+  gap: 13px;
+  align-items: flex-start;
+  text-align: left;
+  padding: 14px 15px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  color: var(--text);
+  cursor: pointer;
+  transition: border-color .2s, transform .15s;
+}
+.trip-card:hover { border-color: var(--accent2); }
+.trip-card:active { transform: scale(.98); }
+.trip-emoji { font-size: 22px; }
+.trip-card-body strong {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15px;
+}
+.trip-card-body p { margin: 3px 0 5px; font-size: 12.5px; line-height: 1.45; opacity: .75; }
+.trip-card-body small { font-size: 11px; opacity: .55; }
+
+.trip-bar {
+  position: absolute;
+  left: 14px; right: 14px;
+  bottom: calc(76px + var(--safe-bottom));
+  z-index: 22;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+}
+.trip-bar[hidden] { display: none; }
+.trip-nav {
+  flex: 0 0 auto;
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.trip-exit { font-size: 13px; opacity: .7; }
+.trip-info {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: center;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.trip-info strong {
+  display: block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 13.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.trip-info span { font-size: 11px; opacity: .65; }
+
+.maplibregl-ctrl-group button.home-ctrl {
+  color: var(--text);
+  font-size: 17px;
+  line-height: 1;
+}
+
 /* ---------- Story wall ---------- */
 .wall {
   position: absolute;

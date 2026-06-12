@@ -14,7 +14,8 @@
       "Bash(git -c 'user.name=Paul Swindell' -c user.email=paul.swindell@scauk.org commit -m ' *)",
       "Bash(gh repo *)",
       "mcp__cloudflare__execute",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(node -e \"const t=require\\('./public/data/trips.json'\\); const p=require\\('./public/data/places.json'\\); const ids=new Set\\(p.features.map\\(f=>f.properties.id\\)\\); for \\(const trip of t.trips\\){ const missing=trip.stops.filter\\(s=>!ids.has\\(s\\)\\); if\\(missing.length\\) console.log\\(trip.id,'MISSING:',missing\\);} console.log\\('trips:',t.trips.length,'all stop ids validated'\\);\")"
     ]
   }
 }
