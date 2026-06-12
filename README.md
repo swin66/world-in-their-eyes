@@ -96,8 +96,16 @@ without hunting: *From Basildon, With Synths*, *Every Album, In Order*,
 *Conquering America*, *The Berlin Years*, *Through Corbijn's Lens*, member
 journeys and more. Defined in [trips.json](public/data/trips.json) as ordered
 lists of place ids — fully band-configurable. Completing a trip earns points
-and its own badge (each trip's `badge` field). A ⌂ home control on the map
-resets the view (and exits any running trip).
+and its own badge (each trip's `badge` field).
+
+- **Auto-play** — choose an auto-advance interval (6/8/12/20s) in the trip
+  picker and the journey runs hands-free; a ▶/⏸ control sits in the trip bar.
+- **Custom trips** — admins/editors build new trips in the admin panel's
+  Trips tab (title, emoji, badge, ordered stop picker with reorder). Saved to
+  the `trips` table in cloud mode, or downloaded as `trips.json` locally.
+- The app opens on a **slowly spinning globe** centred on the median of all
+  plotted places; any interaction takes over, and the ⌂ home control returns
+  to the spinning globe (and exits any running trip).
 
 Story walls open inside a **three.js planetarium** — a slowly rotating sphere
 of glowing particles in the band's colours with pointer parallax

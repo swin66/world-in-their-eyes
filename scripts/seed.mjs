@@ -15,6 +15,7 @@ const db = createClient(url, key);
 const band = JSON.parse(await readFile('public/data/band.json', 'utf8'));
 const places = JSON.parse(await readFile('public/data/places.json', 'utf8'));
 const { artists } = JSON.parse(await readFile('public/data/artists.json', 'utf8'));
+const { trips } = JSON.parse(await readFile('public/data/trips.json', 'utf8'));
 
 const fail = (label) => (res) => {
   if (res.error) { console.error(`${label}:`, res.error.message); process.exit(1); }
@@ -43,4 +44,11 @@ fail('places')(await db.from('places').upsert(
   })),
 ));
 
-console.log(`Seeded: 1 band, ${artists.length} artists, ${places.features.length} places.`);
+fail('trips')(await db.from('trips').upsert(
+  trips.map((t, i) => ({
+    id: t.id, band_slug: band.slug, emoji: t.emoji, title: t.title,
+    description: t.description, badge: t.badge, stops: t.stops, position: i,
+  })),
+));
+
+console.log(`Seeded: 1 band, ${artists.length} artists, ${places.features.length} places, ${trips.length} trips.`);

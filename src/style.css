@@ -566,7 +566,11 @@ html, body, #app {
   display: flex;
   gap: 8px;
   margin: 4px 0 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.admin-tabs::-webkit-scrollbar { display: none; }
+.admin-tab { white-space: nowrap; }
 .admin-tab {
   flex: 1;
   border: 1px solid var(--line);

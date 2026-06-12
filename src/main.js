@@ -44,11 +44,14 @@ async function loadData() {
   ]);
   let places = placesJson;
   let artists = artistsJson.artists;
+  let trips = tripsJson.trips || [];
   if (supabase) {
-    const [placesRes, artistsRes] = await Promise.all([
+    const [placesRes, artistsRes, tripsRes] = await Promise.all([
       supabase.from('places').select('*').eq('band_slug', band.slug),
       supabase.from('artists').select('*').eq('band_slug', band.slug),
+      supabase.from('trips').select('*').eq('band_slug', band.slug).order('position'),
     ]);
+    if (tripsRes.data?.length) trips = tripsRes.data;
     if (placesRes.data?.length) {
       places = {
         type: 'FeatureCollection',
@@ -65,7 +68,7 @@ async function loadData() {
     }
     if (artistsRes.data?.length) artists = artistsRes.data;
   }
-  return { band, places, artists, trips: tripsJson.trips || [] };
+  return { band, places, artists, trips };
 }
 
 /* ---------- Theming ---------- */
@@ -300,6 +303,7 @@ function featureById(id) {
 }
 
 function openSheet(feature, zoomOverride) {
+  stopSpin();
   const p = feature.properties;
   state.selectedId = p.id;
   const cat = state.band.categories[p.category] || {};
@@ -344,7 +348,56 @@ function openSheet(feature, zoomOverride) {
   });
 }
 
+/* ---------- Spinning globe opening view ---------- */
+
+// Centre the opening globe on where the story actually lives: the median of
+// all plotted points (median resists outliers like a one-off gig in Rio).
+function computeStartView() {
+  const median = (values) => {
+    const sorted = [...values].sort((a, b) => a - b);
+    return sorted[Math.floor(sorted.length / 2)];
+  };
+  const coords = state.places.features.map((f) => f.geometry.coordinates);
+  return {
+    center: [median(coords.map((c) => c[0])), median(coords.map((c) => c[1]))],
+    zoom: state.band.map.startZoom ?? 2.1,
+  };
+}
+
+let spinning = false;
+function spinStep() {
+  if (!spinning) return;
+  const center = state.map.getCenter();
+  center.lng += 5; // gentle: a full rotation takes ~5 minutes
+  state.map.easeTo({ center, duration: 4000, easing: (n) => n });
+}
+function startSpin() {
+  spinning = true;
+  spinStep();
+}
+function stopSpin() {
+  spinning = false;
+}
+
 /* ---------- Trips (guided journeys) ---------- */
+
+// Auto-advance: optional hands-free playback with a configurable dwell time.
+let tripTimer = null;
+function autoplaySeconds() {
+  return Number(localStorage.getItem(`wite:${state.band.slug}:autoplay`) ?? 8);
+}
+function scheduleAdvance() {
+  clearTimeout(tripTimer);
+  if (!state.trip?.playing) return;
+  tripTimer = setTimeout(() => goToStop(state.trip.index + 1), state.trip.seconds * 1000);
+}
+function setTripPlaying(playing) {
+  if (!state.trip) return;
+  state.trip.playing = playing;
+  $('trip-play').textContent = playing ? '⏸' : '▶';
+  if (playing) scheduleAdvance();
+  else clearTimeout(tripTimer);
+}
 
 function tripFeatures(trip) {
   return trip.stops.map(featureById).filter(Boolean);
@@ -399,12 +452,15 @@ function drawTripLine(trip) {
 }
 
 function startTrip(trip) {
-  state.trip = { def: trip, index: 0 };
+  stopSpin();
+  const seconds = autoplaySeconds();
+  state.trip = { def: trip, index: 0, seconds: seconds || 8, playing: seconds > 0 };
   document.body.dataset.trip = '1';
   drawTripLine(trip);
   startTripDash();
   $('trip-bar').hidden = false;
   $('trip-title').textContent = `${trip.emoji} ${trip.title}`;
+  $('trip-play').textContent = state.trip.playing ? '⏸' : '▶';
   goToStop(0);
 }
 
@@ -428,9 +484,11 @@ function goToStop(index) {
   const feature = features[trip.index];
   $('trip-step').textContent = `Stop ${trip.index + 1} of ${features.length} — ${feature.properties.year}`;
   openSheet(feature, 9);
+  scheduleAdvance();
 }
 
 function exitTrip() {
+  clearTimeout(tripTimer);
   state.trip = null;
   delete document.body.dataset.trip;
   stopTripDash();
@@ -441,10 +499,19 @@ function exitTrip() {
 }
 
 function openTrips() {
+  const current = autoplaySeconds();
   openModal((card, close) => {
     card.innerHTML = `
       <h2>Take a trip</h2>
-      <p class="modal-text dim">Guided journeys through the story — sit back, press next.</p>
+      <p class="modal-text dim">Guided journeys through the story — pick one and sit back.</p>
+      <div class="admin-row">
+        <span>Auto-advance</span>
+        <select id="trip-auto">
+          ${[[0, "Off — I'll click"], [6, 'Every 6 seconds'], [8, 'Every 8 seconds'],
+             [12, 'Every 12 seconds'], [20, 'Every 20 seconds']]
+            .map(([v, label]) => `<option value="${v}" ${v === current ? 'selected' : ''}>${label}</option>`).join('')}
+        </select>
+      </div>
       <div class="trip-list">
         ${state.trips.map((t) => {
           const stops = tripFeatures(t);
@@ -460,6 +527,9 @@ function openTrips() {
             </button>`;
         }).join('')}
       </div>`;
+    card.querySelector('#trip-auto').addEventListener('change', (e) => {
+      localStorage.setItem(`wite:${state.band.slug}:autoplay`, e.target.value);
+    });
     for (const btn of card.querySelectorAll('.trip-card')) {
       btn.addEventListener('click', () => {
         const trip = state.trips.find((t) => t.id === btn.dataset.id);
@@ -735,11 +805,12 @@ async function init() {
   initAuth(onSessionChange);
   updateProgress();
 
+  const startView = computeStartView();
   const map = new maplibregl.Map({
     container: 'map',
     style: currentTheme().mapStyle,
-    center: band.map.center,
-    zoom: band.map.zoom,
+    center: startView.center,
+    zoom: startView.zoom,
     attributionControl: { compact: true, customAttribution: band.map.attributionExtra },
   });
   state.map = map;
@@ -748,8 +819,16 @@ async function init() {
   map.addControl(new HomeControl(() => {
     if (state.trip) exitTrip();
     closeSheet();
-    map.flyTo({ center: band.map.center, zoom: band.map.zoom, duration: 1400 });
+    closeWall();
+    spinning = true; // resume the idle globe after the flight home
+    map.flyTo({ ...startView, duration: 1600 });
   }), 'bottom-right');
+
+  // The idle globe spins gently until the user takes over.
+  map.on('moveend', () => { if (spinning) spinStep(); });
+  map.getCanvas().addEventListener('pointerdown', stopSpin);
+  map.on('wheel', stopSpin);
+  if (!location.hash) map.once('load', startSpin);
   map.on('click', (e) => {
     // Only close the sheet when the click wasn't on a point/cluster
     const hits = map.queryRenderedFeatures(e.point, { layers: ['points', 'clusters'].filter((l) => map.getLayer(l)) });
@@ -773,6 +852,7 @@ async function init() {
   $('trips-btn').addEventListener('click', openTrips);
   $('trip-prev').addEventListener('click', () => goToStop(state.trip.index - 1));
   $('trip-next').addEventListener('click', () => goToStop(state.trip.index + 1));
+  $('trip-play').addEventListener('click', () => setTripPlaying(!state.trip.playing));
   $('trip-exit').addEventListener('click', exitTrip);
   $('trip-info').addEventListener('click', () => goToStop(state.trip.index));
 

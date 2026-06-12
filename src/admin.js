@@ -36,6 +36,7 @@ export function renderAdmin(container, state, helpers) {
       <div class="admin-tabs">
         <button class="admin-tab ${tab === 'theme' ? 'admin-tab-active' : ''}" data-tab="theme">Theme</button>
         <button class="admin-tab ${tab === 'places' ? 'admin-tab-active' : ''}" data-tab="places">Places</button>
+        <button class="admin-tab ${tab === 'trips' ? 'admin-tab-active' : ''}" data-tab="trips">Trips</button>
         <button class="admin-tab ${tab === 'import' ? 'admin-tab-active' : ''}" data-tab="import">Import</button>
         <button class="admin-tab ${tab === 'moderate' ? 'admin-tab-active' : ''}" data-tab="moderate">Moderation</button>
       </div>
@@ -46,6 +47,7 @@ export function renderAdmin(container, state, helpers) {
     const body = container.querySelector('#admin-body');
     if (tab === 'theme') renderThemeTab(body, state, helpers, role);
     else if (tab === 'places') renderPlacesTab(body, state, helpers, role);
+    else if (tab === 'trips') renderTripsTab(body, state, helpers, role);
     else if (tab === 'moderate') renderModerationTab(body, state, helpers, role);
     else renderImportTab(body, state, helpers, role);
   };
@@ -211,6 +213,136 @@ function renderPlacesTab(body, state, { toast, refreshData }, role) {
     toast('places.json downloaded — replace public/data/places.json and deploy');
   });
   renderList();
+}
+
+function renderTripsTab(body, state, { toast }, role) {
+  let editing = null; // a trip object being edited (live ref or a fresh one)
+
+  const persist = async (trip) => {
+    if (supabase && (role === 'admin' || role === 'editor')) {
+      const { error } = await supabase.from('trips').upsert({
+        id: trip.id, band_slug: state.band.slug, emoji: trip.emoji, title: trip.title,
+        description: trip.description, badge: trip.badge, stops: trip.stops,
+        position: state.trips.indexOf(trip),
+      });
+      toast(error ? `Save failed: ${error.message}` : 'Trip saved for everyone');
+    } else {
+      download('trips.json', { trips: state.trips });
+      toast('trips.json downloaded — replace public/data/trips.json and deploy');
+    }
+  };
+
+  const slugify = (text) => text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const placeTitle = (id) =>
+    state.places.features.find((f) => f.properties.id === id)?.properties.title || id;
+
+  const renderEditor = () => {
+    const t = editing;
+    const editor = body.querySelector('#trip-editor');
+    if (!t) { editor.innerHTML = ''; return; }
+    editor.innerHTML = `
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+      <div class="admin-row"><span style="min-width:62px">Emoji</span>
+        <input type="text" id="te-emoji" value="${t.emoji || '📍'}" style="flex:0 0 64px">
+        <span>Title</span><input type="text" id="te-title" value="${(t.title || '').replaceAll('"', '&quot;')}"></div>
+      <div class="admin-row"><span style="min-width:62px">Blurb</span>
+        <input type="text" id="te-desc" value="${(t.description || '').replaceAll('"', '&quot;')}"></div>
+      <div class="admin-row"><span style="min-width:62px">Badge</span>
+        <input type="text" id="te-badge" value="${(t.badge || '').replaceAll('"', '&quot;')}"
+          placeholder="Badge name awarded on completion"></div>
+      <div class="admin-row">
+        <select id="te-add-place">
+          <option value="">Add a stop…</option>
+          ${state.places.features
+            .slice()
+            .sort((a, b) => a.properties.year - b.properties.year)
+            .map((f) => `<option value="${f.properties.id}">${f.properties.title} (${f.properties.year})</option>`)
+            .join('')}
+        </select>
+      </div>
+      <div class="import-list" id="te-stops">
+        ${t.stops.map((id, i) => `
+          <label data-i="${i}">
+            <span style="opacity:.45">${i + 1}.</span> ${placeTitle(id)}
+            <span class="import-year">
+              <button class="btn-mini" data-up="${i}">↑</button>
+              <button class="btn-mini" data-down="${i}">↓</button>
+              <button class="btn-mini" data-del="${i}">✕</button>
+            </span>
+          </label>`).join('') || '<p class="modal-text dim">No stops yet — add some above.</p>'}
+      </div>
+      <button class="btn btn-primary" id="te-save" style="width:100%">Save trip</button>`;
+
+    editor.querySelector('#te-add-place').addEventListener('change', (e) => {
+      if (!e.target.value) return;
+      t.stops.push(e.target.value);
+      renderEditor();
+    });
+    for (const btn of editor.querySelectorAll('[data-up]')) {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.up);
+        if (i > 0) [t.stops[i - 1], t.stops[i]] = [t.stops[i], t.stops[i - 1]];
+        renderEditor();
+      });
+    }
+    for (const btn of editor.querySelectorAll('[data-down]')) {
+      btn.addEventListener('click', () => {
+        const i = Number(btn.dataset.down);
+        if (i < t.stops.length - 1) [t.stops[i + 1], t.stops[i]] = [t.stops[i], t.stops[i + 1]];
+        renderEditor();
+      });
+    }
+    for (const btn of editor.querySelectorAll('[data-del]')) {
+      btn.addEventListener('click', () => {
+        t.stops.splice(Number(btn.dataset.del), 1);
+        renderEditor();
+      });
+    }
+    editor.querySelector('#te-save').addEventListener('click', () => {
+      t.emoji = editor.querySelector('#te-emoji').value || '📍';
+      t.title = editor.querySelector('#te-title').value.trim();
+      t.description = editor.querySelector('#te-desc').value.trim();
+      t.badge = editor.querySelector('#te-badge').value.trim();
+      if (!t.title || t.stops.length < 2) { toast('A trip needs a title and at least 2 stops'); return; }
+      if (!t.id) t.id = slugify(t.title);
+      if (!state.trips.includes(t)) state.trips.push(t);
+      persist(t);
+      renderList();
+    });
+  };
+
+  const renderList = () => {
+    const list = body.querySelector('#trip-admin-list');
+    list.innerHTML = state.trips.map((t) => `
+      <label data-id="${t.id}" style="cursor:pointer">${t.emoji} ${t.title}
+        <span class="import-year">${t.stops.length} stops</span></label>`).join('');
+    for (const row of list.querySelectorAll('label')) {
+      row.addEventListener('click', () => {
+        editing = state.trips.find((t) => t.id === row.dataset.id);
+        renderEditor();
+      });
+    }
+  };
+
+  body.innerHTML = `
+    <p class="modal-text dim">Build custom journeys — an album in order, a tour leg, a member's
+    story. Trips appear instantly in the 🧭 picker.</p>
+    <div class="admin-row">
+      <button class="btn" id="trip-new" style="flex:1">＋ New trip</button>
+      <button class="btn" id="trips-download" style="flex:1">Download trips.json</button>
+    </div>
+    <div class="import-list" id="trip-admin-list"></div>
+    <div id="trip-editor"></div>`;
+  body.querySelector('#trip-new').addEventListener('click', () => {
+    editing = { id: '', emoji: '📍', title: '', description: '', badge: '', stops: [] };
+    renderEditor();
+  });
+  body.querySelector('#trips-download').addEventListener('click', () => {
+    download('trips.json', { trips: state.trips });
+    toast('trips.json downloaded — replace public/data/trips.json and deploy');
+  });
+  renderList();
+  renderEditor();
 }
 
 function renderModerationTab(body, state, { toast }, role) {

@@ -39,6 +39,18 @@ create table public.checkins (
   primary key (user_id, place_id)
 );
 
+-- Guided trips: ordered journeys through places. Admin/editor curated.
+create table public.trips (
+  id text primary key,
+  band_slug text not null references public.bands(slug) on delete cascade,
+  emoji text,
+  title text not null,
+  description text,
+  badge text,
+  stops jsonb not null default '[]'::jsonb,
+  position int not null default 0
+);
+
 -- Phase 3: fan-submitted memories/photos per place (moderated).
 create table public.memories (
   id uuid primary key default gen_random_uuid(),
@@ -81,6 +93,7 @@ $$ select role from public.profiles where id = auth.uid() $$;
 alter table public.bands enable row level security;
 alter table public.artists enable row level security;
 alter table public.places enable row level security;
+alter table public.trips enable row level security;
 alter table public.checkins enable row level security;
 alter table public.memories enable row level security;
 
@@ -97,6 +110,10 @@ create policy "editor write places" on public.places for all
   using (public.app_role() in ('admin', 'editor'))
   with check (public.app_role() in ('admin', 'editor'));
 create policy "editor write artists" on public.artists for all
+  using (public.app_role() in ('admin', 'editor'))
+  with check (public.app_role() in ('admin', 'editor'));
+create policy "public read trips" on public.trips for select using (true);
+create policy "editor write trips" on public.trips for all
   using (public.app_role() in ('admin', 'editor'))
   with check (public.app_role() in ('admin', 'editor'));
 
