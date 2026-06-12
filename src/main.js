@@ -142,6 +142,7 @@ function addDataLayers() {
     cluster: true,
     clusterMaxZoom: 17,
     clusterRadius: 44,
+    promoteId: 'id',
   });
   map.addLayer({
     id: 'clusters',
@@ -176,7 +177,9 @@ function addDataLayers() {
     filter: ['!', ['has', 'point_count']],
     paint: {
       'circle-color': ['get', 'color'],
-      'circle-radius': ['case', ['==', ['get', 'visited'], true], 9.5, 7.5],
+      'circle-radius': ['+',
+        ['case', ['==', ['get', 'visited'], true], 9.5, 7.5],
+        ['case', ['boolean', ['feature-state', 'hover'], false], 2.5, 0]],
       'circle-stroke-width': 2.5,
       'circle-stroke-color': ['case', ['==', ['get', 'visited'], true], '#ffffff', theme.bg],
     },
@@ -199,6 +202,35 @@ function addDataLayers() {
 
 function bindMapInteractions() {
   const map = state.map;
+
+  // Floating tooltip + hover glow on points; story count on clusters.
+  const tip = document.createElement('div');
+  tip.className = 'map-tip';
+  document.getElementById('app').appendChild(tip);
+  let hoveredId = null;
+  const setHover = (id, on) =>
+    map.setFeatureState({ source: 'places', id }, { hover: on });
+  const showTip = (e, text) => {
+    tip.textContent = text;
+    tip.style.left = `${e.point.x}px`;
+    tip.style.top = `${e.point.y - 14}px`;
+    tip.classList.add('map-tip-show');
+  };
+  const hideTip = () => {
+    tip.classList.remove('map-tip-show');
+    if (hoveredId !== null) { setHover(hoveredId, false); hoveredId = null; }
+  };
+  map.on('mousemove', 'points', (e) => {
+    const p = e.features[0].properties;
+    if (hoveredId !== null && hoveredId !== p.id) setHover(hoveredId, false);
+    hoveredId = p.id;
+    setHover(hoveredId, true);
+    showTip(e, `${p.title} · ${p.year}`);
+  });
+  map.on('mouseleave', 'points', hideTip);
+  map.on('mousemove', 'clusters', (e) =>
+    showTip(e, `${e.features[0].properties.point_count} stories — tap to open`));
+  map.on('mouseleave', 'clusters', () => tip.classList.remove('map-tip-show'));
 
   map.on('click', 'points', (e) => {
     const props = e.features[0].properties;
@@ -312,6 +344,8 @@ function openSheet(feature, zoomOverride) {
   const artist = p.artistId ? state.artists.get(p.artistId) : null;
   const body = $('sheet-body');
   body.innerHTML = `
+    <span class="sheet-cat-bar" style="background:linear-gradient(90deg, ${cat.color}, transparent)"></span>
+    <span class="sheet-watermark" style="color:${cat.color}" aria-hidden="true">${p.year}</span>
     <div class="sheet-meta">
       <span class="chip-dot" style="background:${cat.color}"></span>
       <span>${cat.label || ''}</span>
@@ -345,6 +379,113 @@ function openSheet(feature, zoomOverride) {
     zoom: zoomOverride ?? Math.max(state.map.getZoom(), 6),
     padding: { bottom: 260 },
     duration: zoomOverride ? 1600 : 900,
+  });
+}
+
+/* ---------- Search ---------- */
+
+function openSearch() {
+  $('search').hidden = false;
+  $('search-input').value = '';
+  $('search-results').innerHTML = '';
+  $('search-input').focus();
+}
+
+function closeSearch() {
+  $('search').hidden = true;
+  $('search-input').blur();
+}
+
+function runSearch(query) {
+  const q = query.trim().toLowerCase();
+  const box = $('search-results');
+  if (q.length < 2) { box.innerHTML = ''; return; }
+  const scored = state.places.features.map((f) => {
+    const p = f.properties;
+    const title = p.title.toLowerCase();
+    const cat = (state.band.categories[p.category]?.label || '').toLowerCase();
+    let score = 0;
+    if (title.startsWith(q)) score = 3;
+    else if (title.includes(q)) score = 2;
+    else if (cat.includes(q) || String(p.year) === q || (p.summary || '').toLowerCase().includes(q)) score = 1;
+    return { f, score };
+  }).filter((r) => r.score > 0)
+    .sort((a, b) => b.score - a.score || a.f.properties.year - b.f.properties.year)
+    .slice(0, 8);
+
+  box.innerHTML = scored.map(({ f }) => {
+    const p = f.properties;
+    const cat = state.band.categories[p.category] || {};
+    return `
+      <button class="search-result" data-id="${p.id}">
+        <span class="chip-dot" style="background:${cat.color}"></span>
+        <span class="search-result-title">${p.title}</span>
+        <span class="search-result-meta">${cat.label || ''} · ${p.year}</span>
+      </button>`;
+  }).join('') || '<p class="search-empty">Nothing found — try a place, album or year.</p>';
+
+  for (const btn of box.querySelectorAll('.search-result')) {
+    btn.addEventListener('click', () => {
+      const feature = featureById(btn.dataset.id);
+      closeSearch();
+      if (feature) openSheet(feature, Math.max(state.map.getZoom(), 8));
+    });
+  }
+}
+
+/* ---------- Keyboard ---------- */
+
+function isTyping() {
+  return ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+}
+
+// Drag the handle down to dismiss the sheet (mobile-natural gesture).
+function bindSheetSwipe() {
+  const sheet = $('sheet');
+  const handleZone = sheet.querySelector('.sheet-handle');
+  let startY = null;
+  handleZone.addEventListener('pointerdown', (e) => {
+    startY = e.clientY;
+    sheet.style.transition = 'none';
+    handleZone.setPointerCapture(e.pointerId);
+  });
+  handleZone.addEventListener('pointermove', (e) => {
+    if (startY === null) return;
+    const dy = Math.max(0, e.clientY - startY);
+    sheet.style.transform = `translateY(${dy}px)`;
+  });
+  const release = (e) => {
+    if (startY === null) return;
+    const dy = e.clientY - startY;
+    startY = null;
+    sheet.style.transition = '';
+    sheet.style.transform = '';
+    if (dy > 80) closeSheet();
+  };
+  handleZone.addEventListener('pointerup', release);
+  handleZone.addEventListener('pointercancel', release);
+}
+
+function bindKeyboard() {
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!$('search').hidden) return closeSearch();
+      if ($('modal').classList.contains('modal-open')) return $('modal').classList.remove('modal-open');
+      if (document.getElementById('wall').classList.contains('wall-open')) return closeWall();
+      if (state.trip) return exitTrip();
+      return closeSheet();
+    }
+    if (isTyping()) {
+      if (e.key === 'Enter' && document.activeElement === $('search-input')) {
+        $('search-results').querySelector('.search-result')?.click();
+      }
+      return;
+    }
+    if (e.key === '/') { e.preventDefault(); openSearch(); }
+    if (state.trip) {
+      if (e.key === 'ArrowRight') goToStop(state.trip.index + 1);
+      if (e.key === 'ArrowLeft') goToStop(state.trip.index - 1);
+    }
   });
 }
 
@@ -854,6 +995,11 @@ async function init() {
   $('trip-next').addEventListener('click', () => goToStop(state.trip.index + 1));
   $('trip-play').addEventListener('click', () => setTripPlaying(!state.trip.playing));
   $('trip-exit').addEventListener('click', exitTrip);
+  $('search-btn').addEventListener('click', () =>
+    $('search').hidden ? openSearch() : closeSearch());
+  $('search-input').addEventListener('input', (e) => runSearch(e.target.value));
+  bindKeyboard();
+  bindSheetSwipe();
   $('trip-info').addEventListener('click', () => goToStop(state.trip.index));
 
   // Deep link: /#place-id opens that place

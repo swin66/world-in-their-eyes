@@ -25,6 +25,7 @@
           <span class="progress-ring" id="progress-ring"></span>
           <span id="progress-count">0</span>
         </button>
+        <button class="account-btn" id="search-btn" aria-label="Search places">⌕</button>
         <button class="account-btn" id="trips-btn" aria-label="Guided trips">🧭</button>
         <button class="account-btn" id="mode-btn" aria-label="Toggle light or dark mode">◐</button>
         <button class="account-btn" id="account-btn" aria-label="Account">☻</button>
@@ -32,6 +33,11 @@
     </header>
 
     <nav class="filters" id="filters" aria-label="Filter places by category"></nav>
+
+    <div class="search" id="search" hidden>
+      <input id="search-input" type="search" placeholder="Search places, releases, gigs… ( / )" autocomplete="off" />
+      <div class="search-results" id="search-results"></div>
+    </div>
 
     <div id="map" role="application" aria-label="Interactive band history map"></div>
 

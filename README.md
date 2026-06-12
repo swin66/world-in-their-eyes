@@ -88,6 +88,17 @@ to `main`. One-time setup:
 When Supabase goes live, add `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY`
 as repository **variables** so production builds include accounts + sync.
 
+## UX details
+
+- **Search** (⌕ or press `/`) — instant fuzzy search across titles, categories,
+  years and summaries; Enter jumps to the top hit.
+- **Hover** — points glow and show a tooltip (title · year); clusters show
+  their story count.
+- **Keyboard** — `Esc` closes whatever is topmost (search → modal → wall →
+  trip → sheet); `←`/`→` step through a running trip.
+- **Touch** — drag the sheet's handle down to dismiss it.
+- Place cards carry a category colour bar and a watermark year.
+
 ## Trips (guided journeys)
 
 The 🧭 button opens **Trips** — curated journeys that fly stop-to-stop with a
