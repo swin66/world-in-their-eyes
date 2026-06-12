@@ -45,6 +45,7 @@
   "gamification": {
     "checkinLabel": "I made the pilgrimage",
     "contribution": { "label": "Add a memory", "points": 15, "mediaBonus": 10 },
+    "tripPoints": 30,
     "contributionBadges": [
       { "id": "somebody", "label": "Somebody", "threshold": 1 },
       { "id": "see-you", "label": "See You", "threshold": 5 },

@@ -37,6 +37,23 @@ export function createCheckins(bandSlug) {
   };
 }
 
+// Completed guided trips — once finished, always finished.
+export function createTripLog(bandSlug) {
+  const key = `wite:${bandSlug}:trips-done`;
+  let done;
+  try { done = new Set(JSON.parse(localStorage.getItem(key)) || []); }
+  catch { done = new Set(); }
+  return {
+    has: (id) => done.has(id),
+    asSet: () => new Set(done),
+    count: () => done.size,
+    markDone(id) {
+      done.add(id);
+      localStorage.setItem(key, JSON.stringify([...done]));
+    },
+  };
+}
+
 // Daily activity streak: any check-in or contribution counts for the day.
 // `best` persists so streak badges, once earned, stay earned.
 export function createStreak(bandSlug) {

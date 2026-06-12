@@ -2,7 +2,7 @@ import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import confetti from 'canvas-confetti';
 import './style.css';
-import { createCheckins, createStreak } from './gamification.js';
+import { createCheckins, createStreak, createTripLog } from './gamification.js';
 import { computeProgress, renderPassport, haversineKm } from './passport.js';
 import { createContributions, KINDS, shrinkImage } from './contributions.js';
 import { supabase } from './supabase.js';
@@ -390,9 +390,15 @@ function goToStop(index) {
   if (!trip) return;
   const features = tripFeatures(trip.def);
   if (index >= features.length) {
+    const before = snapshotProgress();
+    state.tripLog.markDone(trip.def.id);
+    state.streak.record();
+    const after = snapshotProgress();
     confetti({ particleCount: 160, spread: 90, origin: { y: 0.6 }, zIndex: 100 });
-    toast(`🧭 Trip complete: ${trip.def.title}`);
+    celebrateDiff(before, after, (gained) =>
+      `🧭 Trip complete: ${trip.def.title}${gained ? ` (+${gained} pts)` : ''}`);
     exitTrip();
+    updateProgress();
     return;
   }
   trip.index = Math.max(0, index);
@@ -464,6 +470,8 @@ function progressExtras() {
     mediaContributions: state.contributions.mediaCount(),
     streakBest: state.streak.best(),
     streakNow: state.streak.current(),
+    completedTrips: state.tripLog.asSet(),
+    tripDefs: state.trips,
   };
 }
 
@@ -689,6 +697,7 @@ async function init() {
   state.artists = new Map(artists.map((a) => [a.id, a]));
   state.checkins = createCheckins(band.slug);
   state.streak = createStreak(band.slug);
+  state.tripLog = createTripLog(band.slug);
   state.contributions = createContributions(band.slug);
   state.contributions.loadRemote(places.features.map((f) => f.properties.id)).catch(() => {});
   state.mode = localStorage.getItem(`wite:${band.slug}:mode`) || band.defaultMode || 'dark';

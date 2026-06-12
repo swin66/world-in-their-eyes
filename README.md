@@ -95,8 +95,14 @@ route line on the map and prev/next controls, so fans can experience the story
 without hunting: *From Basildon, With Synths*, *Every Album, In Order*,
 *Conquering America*, *The Berlin Years*, *Through Corbijn's Lens*, member
 journeys and more. Defined in [trips.json](public/data/trips.json) as ordered
-lists of place ids — fully band-configurable. A ⌂ home control on the map
+lists of place ids — fully band-configurable. Completing a trip earns points
+and its own badge (each trip's `badge` field). A ⌂ home control on the map
 resets the view (and exits any running trip).
+
+Story walls open inside a **three.js planetarium** — a slowly rotating sphere
+of glowing particles in the band's colours with pointer parallax
+([wallfx.js](src/wallfx.js)). three.js is lazy-loaded only when a wall opens,
+so the core map bundle stays lean; it respects `prefers-reduced-motion`.
 
 ## Roadmap
 

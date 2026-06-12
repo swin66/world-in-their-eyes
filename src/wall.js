@@ -1,6 +1,7 @@
 // The "story wall": a full-screen immersive view of every event, release and
-// memory at one hotspot. Cards float in on a subtle 3D curve; tapping one
-// opens the detail sheet on top.
+// memory at one hotspot. Cards float in on a subtle 3D curve over a rotating
+// particle planetarium (wallfx.js); tapping one opens the detail sheet on top.
+import { startWallFX, stopWallFX } from './wallfx.js';
 
 function wallTitle(features) {
   // Hotspots often share a location name ("Hansa Studios, Berlin") — use the
@@ -17,6 +18,7 @@ function wallTitle(features) {
 
 export function closeWall() {
   document.getElementById('wall')?.classList.remove('wall-open');
+  stopWallFX();
 }
 
 export function openWall(features, state, { onSelect }) {
@@ -62,4 +64,5 @@ export function openWall(features, state, { onSelect }) {
     });
   }
   wall.classList.add('wall-open');
+  startWallFX(wall);
 }

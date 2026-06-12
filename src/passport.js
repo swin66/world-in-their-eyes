@@ -40,6 +40,8 @@ export function computeProgress(visited, places, band, extras = {}) {
   const mediaContributions = extras.mediaContributions || 0;
   points += contributions * (gam.contribution?.points || 0)
     + mediaContributions * (gam.contribution?.mediaBonus || 0);
+  const completedTrips = extras.completedTrips || new Set();
+  points += completedTrips.size * (gam.tripPoints || 0);
 
   const badges = [
     ...gam.badges.map((b) => ({
@@ -75,6 +77,12 @@ export function computeProgress(visited, places, band, extras = {}) {
       label: b.label,
       desc: `Check in on location ${b.threshold > 1 ? `${b.threshold} times` : 'once'} (GPS-verified)`,
       earned: verified.size >= b.threshold,
+    })),
+    ...(extras.tripDefs || []).filter((t) => t.badge).map((t) => ({
+      id: `trip-${t.id}`,
+      label: t.badge,
+      desc: `Complete the “${t.title}” trip`,
+      earned: completedTrips.has(t.id),
     })),
   ];
 
