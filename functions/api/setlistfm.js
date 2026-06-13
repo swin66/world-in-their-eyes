@@ -32,7 +32,10 @@ export async function onRequest(context) {
     `https://api.setlist.fm/rest/1.0/search/setlists` +
     `?artistName=${encodeURIComponent(artist)}&p=${encodeURIComponent(page)}`;
 
-  console.log(`[setlistfm] → GET ${sfmUrl} (key: ${apiKey.slice(0, 8)}…)`);
+  // Forward the real client IP so Setlist.fm rate-limits per user, not per Cloudflare edge node
+  const clientIp = request.headers.get('CF-Connecting-IP') || request.headers.get('X-Forwarded-For') || '';
+
+  console.log(`[setlistfm] → GET ${sfmUrl} (key: ${apiKey.slice(0, 8)}… clientIp: ${clientIp})`);
 
   let upstream;
   try {
@@ -41,6 +44,7 @@ export async function onRequest(context) {
         'x-api-key': apiKey,
         'Accept': 'application/json',
         'User-Agent': 'WorldInTheirEyes/1.0',
+        ...(clientIp ? { 'X-Forwarded-For': clientIp } : {}),
       },
     });
   } catch (err) {
