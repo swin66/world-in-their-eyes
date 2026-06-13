@@ -15,6 +15,7 @@ import { maybeOnboard } from './onboarding.js';
 import { getLang, getLangs, getSupportedLangs, setLang, t, tf } from './i18n.js';
 import { speak, stopSpeaking, isSpeaking, clearCache, getVoiceForLang, setVoiceForLang, getAutoplay, setAutoplay, fetchVoices } from './tts.js';
 import { initGalaxy } from './galaxy.js';
+import { showSelector } from './selector.js';
 
 const ELEVENLABS_KEY = import.meta.env.VITE_ELEVENLABS_KEY || '';
 
@@ -43,13 +44,14 @@ async function loadJSON(url) {
 
 // Prefer database content when Supabase is configured and seeded;
 // otherwise fall back to the static JSON shipped with the site.
-async function loadData() {
+async function loadData(slug) {
+  const base = `/data/bands/${slug}`;
   const [band, placesJson, artistsJson, tripsJson, sideshowsJson] = await Promise.all([
-    loadJSON('/data/band.json'),
-    loadJSON('/data/places.json'),
-    loadJSON('/data/artists.json'),
-    loadJSON('/data/trips.json').catch(() => ({ trips: [] })),
-    loadJSON('/data/sideshows.json').catch(() => ({ sideshows: [] })),
+    loadJSON(`${base}/band.json`),
+    loadJSON(`${base}/places.json`),
+    loadJSON(`${base}/artists.json`),
+    loadJSON(`${base}/trips.json`).catch(() => ({ trips: [] })),
+    loadJSON(`${base}/sideshows.json`).catch(() => ({ sideshows: [] })),
   ]);
   let places = placesJson;
   let artists = artistsJson.artists;
@@ -1280,8 +1282,7 @@ function openAccount() {
       onAdmin: () => openModal((c, cl) => renderAdmin(c, state, {
         onClose: cl, toast, setMode, refreshData: refreshMapData,
       })),
-    });
-    injectFanLevel(card);
+    }).then(() => injectFanLevel(card));
   });
 }
 
@@ -1363,8 +1364,8 @@ async function onSessionChange(user) {
 
 /* ---------- Boot ---------- */
 
-async function init() {
-  const { band, places, artists, trips, sideshows } = await loadData();
+async function init(slug) {
+  const { band, places, artists, trips, sideshows } = await loadData(slug);
   state.band = band;
   state.places = places;
   state.trips = trips;
@@ -1379,7 +1380,7 @@ async function init() {
   state.mode = localStorage.getItem(`wite:${band.slug}:mode`) || band.defaultMode || 'dark';
 
   applyTheme(band, state.mode);
-  initGalaxy();
+  initGalaxy(band);
   const introWillPlay = !sessionStorage.getItem('wite:intro-played');
   playIntro(band); // runs over the top while the map loads beneath
   setTimeout(() => maybeOnboard(band), introWillPlay ? 4400 : 1200);
@@ -1437,6 +1438,10 @@ async function init() {
 
   $('progress-pill').addEventListener('click', openPassport);
   $('account-btn').addEventListener('click', openAccount);
+  $('brand-btn').addEventListener('click', () => {
+    localStorage.removeItem('wite:band');
+    location.href = location.pathname; // back to selector, clear ?band= param
+  });
   $('mode-btn').addEventListener('click', () =>
     setMode(state.mode === 'dark' ? 'light' : 'dark'));
   $('lang-btn').addEventListener('click', () => openLangPicker());
@@ -1582,7 +1587,30 @@ function openVoicePicker(lang, onPick) {
 
 window.__wite = state; // debug handle
 
-init().catch((err) => {
+async function boot() {
+  const params = new URLSearchParams(location.search);
+  let slug = params.get('band');
+
+  if (!slug) {
+    // Check localStorage for a remembered selection
+    slug = localStorage.getItem('wite:band') || null;
+  }
+
+  if (!slug) {
+    // Show the band selector overlay, wait for user choice
+    slug = await showSelector();
+  }
+
+  // Persist selection and reflect in URL without a navigation
+  localStorage.setItem('wite:band', slug);
+  const url = new URL(location.href);
+  url.searchParams.set('band', slug);
+  history.replaceState({}, '', url);
+
+  await init(slug);
+}
+
+boot().catch((err) => {
   console.error(err);
-  toast('Something went wrong loading the map data.');
+  toast('Something went wrong loading the atlas.');
 });

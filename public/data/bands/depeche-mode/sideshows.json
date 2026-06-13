@@ -1,0 +1,82 @@
+{
+  "sideshows": [
+    {
+      "id": "gear-that-made-the-sound",
+      "emoji": "🎛️",
+      "title": "Gear That Made the Sound",
+      "description": "The synths and samplers behind the noise — a journey through machines, not places.",
+      "badge": "Sound Designer",
+      "cards": [
+        {
+          "title": "ARP 2600",
+          "subtitle": "The first voice",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Arp2600.jpg/640px-Arp2600.jpg",
+          "body": "A semi-modular monosynth that gave the earliest records their bright, springy leads. Patch a cable wrong and you got happy accidents — exactly the spirit of a band teaching itself electronics in a Basildon bedroom."
+        },
+        {
+          "title": "E-mu Emulator",
+          "subtitle": "Sampling changes everything",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Emulator_I.jpg/640px-Emulator_I.jpg",
+          "body": "From Construction Time Again onward, the band sampled the real world — anvils, scrap metal, a smashed bottle — and played it back on a keyboard. Industrial sounds became melody. Pop would never sound the same."
+        },
+        {
+          "title": "PPG Wave",
+          "subtitle": "The cold digital shimmer",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d5/PPG_Wave_2.3.jpg/640px-PPG_Wave_2.3.jpg",
+          "body": "That glassy, slightly unreal texture across the mid-80s albums is the PPG's wavetable digital synthesis — the sound of the future arriving with a blue glow."
+        },
+        {
+          "title": "Synclavier",
+          "subtitle": "The expensive monster",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Synclavier_II.jpg/640px-Synclavier_II.jpg",
+          "body": "A fearsomely costly digital workstation that Alan Wilder pushed to its limits for sampling and sound design — a big part of why Black Celebration sounds so vast and precise."
+        },
+        {
+          "title": "Roland TR-808 & friends",
+          "subtitle": "The pulse underneath",
+          "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7b/Roland_TR-808_%28large%29.jpg/640px-Roland_TR-808_%28large%29.jpg",
+          "body": "Drum machines gave the band their relentless heartbeat. No drummer, no kit — just programmed rhythm, machine-tight, that a hundred thousand people could move to in a stadium."
+        },
+        {
+          "title": "The voice as instrument",
+          "subtitle": "Sampled, looped, layered",
+          "body": "By Violator, even Dave's voice and Martin's harmonies were treated as raw material — chopped, layered and folded back into the productions. The most human instrument, run through the machines."
+        }
+      ]
+    },
+    {
+      "id": "sleeves-and-symbols",
+      "emoji": "🌹",
+      "title": "Sleeves & Symbols",
+      "description": "The artwork and icons that became as recognisable as the songs.",
+      "badge": "Iconographer",
+      "cards": [
+        {
+          "title": "The Rose",
+          "subtitle": "Violator, 1990",
+          "body": "Anton Corbijn's single red rose against black is one of the most recognised images in pop. Beauty with a thorn — the perfect emblem for an album about desire and control."
+        },
+        {
+          "title": "The Worker",
+          "subtitle": "Construction Time Again, 1983",
+          "body": "Brian Griffin's photo of a man swinging a sledgehammer on an Alpine peak framed the band's turn toward industry, politics and the sampled clang of real labour."
+        },
+        {
+          "title": "The Loudhailer",
+          "subtitle": "Music for the Masses, 1987",
+          "body": "Bright orange speakers planted in empty landscapes — and on billboards with no band name at all. An ironic title made into an unforgettable, slightly absurd visual campaign."
+        },
+        {
+          "title": "Corbijn's World",
+          "subtitle": "1986 onward",
+          "body": "From Strangelove onward, Anton Corbijn shaped nearly every video, sleeve and stage set — grainy, romantic, dryly funny. The band's entire visual identity is, in large part, his."
+        },
+        {
+          "title": "The Devotional Stage",
+          "subtitle": "1993",
+          "body": "Corbijn's towering screens and stark lighting turned the Devotional tour into a cathedral of sound and image — the look that every arena tour since has chased."
+        }
+      ]
+    }
+  ]
+}

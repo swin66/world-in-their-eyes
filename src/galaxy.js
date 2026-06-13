@@ -1,40 +1,52 @@
-// Animated star-field rendered behind the globe.
-// Stars twinkle and drift slowly upward to give a "travelling through space" feel.
-// The CSS perspective tilt on the container creates the Star-Wars-crawl receding effect.
+// Background behind the globe.
+// If band.backgroundImage is set: shows a B&W band photo with a Star Wars
+// perspective tilt (slopes away at the top like the opening crawl).
+// Otherwise: animated star-field canvas.
 
-const COUNT = 320;
-
-export function initGalaxy() {
+export function initGalaxy(band) {
   const bg = document.createElement('div');
   bg.id = 'galaxy-bg';
 
-  const field = document.createElement('div');
-  field.className = 'galaxy-field';
-
-  const canvas = document.createElement('canvas');
-  bg.appendChild(field);
-  field.appendChild(canvas);
-
-  // Insert before #map so the map canvas sits on top
   const mapEl = document.getElementById('map');
   mapEl.parentNode.insertBefore(bg, mapEl);
 
-  // Random star data
+  if (band?.backgroundImage) {
+    return initPhotoBackground(bg, band.backgroundImage);
+  }
+  return initStarfield(bg);
+}
+
+function initPhotoBackground(bg, src) {
+  bg.innerHTML = `
+    <div class="galaxy-field">
+      <img class="galaxy-photo" src="${src}" alt="" aria-hidden="true">
+      <div class="galaxy-photo-vignette"></div>
+    </div>`;
+  return () => bg.remove();
+}
+
+function initStarfield(bg) {
+  const field = document.createElement('div');
+  field.className = 'galaxy-field';
+  const canvas = document.createElement('canvas');
+  field.appendChild(canvas);
+  bg.appendChild(field);
+
+  const COUNT = 320;
   const stars = Array.from({ length: COUNT }, () => ({
     x: Math.random(),
     y: Math.random(),
-    r: Math.random() ** 1.8 * 1.6 + 0.25,  // power-law: many tiny, few bright
+    r: Math.random() ** 1.8 * 1.6 + 0.25,
     baseOpacity: Math.random() * 0.65 + 0.2,
     phase: Math.random() * Math.PI * 2,
     twinkleSpeed: Math.random() * 0.6 + 0.15,
-    drift: Math.random() * 0.00004 + 0.00001,  // slow upward drift rate
-    blue: Math.random() > 0.75,  // some stars are slightly blue-white
+    drift: Math.random() * 0.00004 + 0.00001,
+    blue: Math.random() > 0.75,
   }));
 
   let w = 0, h = 0, raf = null;
 
   function resize() {
-    // canvas is inside .galaxy-field which is oversized; use window dims
     w = canvas.width = window.innerWidth * 1.3;
     h = canvas.height = window.innerHeight * 1.5;
   }
@@ -43,7 +55,6 @@ export function initGalaxy() {
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, w, h);
 
-    // Faint nebula glow clusters
     const g1 = ctx.createRadialGradient(w * 0.35, h * 0.42, 0, w * 0.35, h * 0.42, w * 0.38);
     g1.addColorStop(0, 'rgba(70, 30, 120, 0.08)');
     g1.addColorStop(1, 'rgba(0,0,0,0)');
@@ -57,12 +68,9 @@ export function initGalaxy() {
     ctx.fillRect(0, 0, w, h);
 
     const time = t / 1000;
-
     for (const s of stars) {
-      // Drift upward (wrap around)
       s.y -= s.drift;
       if (s.y < -0.02) s.y = 1.02;
-
       const twinkle = 0.5 + 0.5 * Math.sin(time * s.twinkleSpeed + s.phase);
       const opacity = s.baseOpacity * (0.4 + 0.6 * twinkle);
       ctx.globalAlpha = opacity;
@@ -70,8 +78,6 @@ export function initGalaxy() {
       ctx.beginPath();
       ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
       ctx.fill();
-
-      // Halo on larger stars
       if (s.r > 1.1) {
         ctx.globalAlpha = opacity * 0.25;
         ctx.beginPath();
@@ -79,7 +85,6 @@ export function initGalaxy() {
         ctx.fill();
       }
     }
-
     ctx.globalAlpha = 1;
     raf = requestAnimationFrame(draw);
   }

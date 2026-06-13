@@ -1,0 +1,13 @@
+[
+  {
+    "slug": "depeche-mode",
+    "name": "Depeche Mode",
+    "appTitle": "World in Their Eyes",
+    "tagline": "Let me take you on a trip",
+    "description": "The definitive fan atlas for Depeche Mode — every studio, stage and story.",
+    "coverImage": "/data/bands/depeche-mode/cover.jpg",
+    "accentColor": "#e3342f",
+    "placeCount": 94,
+    "status": "live"
+  }
+]

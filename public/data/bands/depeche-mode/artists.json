@@ -1,0 +1,46 @@
+{
+  "artists": [
+    {
+      "id": "yazoo",
+      "name": "Yazoo",
+      "relation": "Vince Clarke offshoot · 1982–83",
+      "blurb": "Days after leaving Depeche Mode, Vince Clarke teamed up with Alison Moyet. Two perfect albums — Upstairs at Eric's and You and Me Both — and singles like Only You and Don't Go."
+    },
+    {
+      "id": "the-assembly",
+      "name": "The Assembly",
+      "relation": "Vince Clarke project · 1983",
+      "blurb": "Vince Clarke and Blackwing engineer Eric Radcliffe's one-single project: Never Never, sung by Feargal Sharkey, reached the UK top 5."
+    },
+    {
+      "id": "erasure",
+      "name": "Erasure",
+      "relation": "Vince Clarke's band · 1985–present",
+      "blurb": "Vince found Andy Bell through a Melody Maker ad and never looked back — 40 years, 19 albums, and some of the greatest pop songs Britain has produced."
+    },
+    {
+      "id": "recoil",
+      "name": "Recoil",
+      "relation": "Alan Wilder's project · 1986–present",
+      "blurb": "Alan Wilder's experimental outlet, which became his main vehicle after leaving Depeche Mode in 1995 — cinematic, sample-driven records like Unsound Methods and subHuman."
+    },
+    {
+      "id": "dave-gahan-solo",
+      "name": "Dave Gahan & Soulsavers",
+      "relation": "Solo · 2003–present",
+      "blurb": "Dave's solo records Paper Monsters and Hourglass proved the voice could write too, and his ongoing collaboration with Soulsavers found gospel-soaked gold."
+    },
+    {
+      "id": "martin-gore-solo",
+      "name": "Martin L. Gore",
+      "relation": "Solo · 1989–present",
+      "blurb": "Martin's Counterfeit cover EPs and instrumental electronic albums (MG, The Third Chimpanzee) — the songwriter exploring everyone else's songs, and no songs at all."
+    },
+    {
+      "id": "vcmg",
+      "name": "VCMG",
+      "relation": "Clarke × Gore collaboration · 2012",
+      "blurb": "Thirty years after Vince left, Clarke and Gore reunited for Ssss — a pure techno album made almost entirely by swapping files, barely meeting in person. Very them."
+    }
+  ]
+}

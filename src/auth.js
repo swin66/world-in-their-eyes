@@ -1,10 +1,14 @@
 import { supabase } from './supabase.js';
+import { getBandRole, applyForBandRep, clearRoleCache, _setGetUser } from './roles.js';
 
 // Account UI + check-in sync. All functions are safe to call in local mode
 // (no Supabase configured): they no-op and the UI explains the situation.
 
 let currentUser = null;
 let currentRole = null; // 'admin' | 'editor' | 'fan' | null (signed out)
+
+// Wire getUser into roles.js (avoids circular import)
+_setGetUser(() => currentUser);
 
 export function getUser() {
   return currentUser;
@@ -28,12 +32,14 @@ export function initAuth(onSessionChange) {
   supabase.auth.onAuthStateChange((_event, session) => {
     currentUser = session?.user ?? null;
     currentRole = null;
+    clearRoleCache();
     fetchRole().then((role) => { currentRole = role; });
     onSessionChange(currentUser);
   });
 }
 
 export async function signOut() {
+  clearRoleCache();
   await supabase?.auth.signOut();
 }
 
@@ -78,13 +84,12 @@ export async function pushCheckin(bandSlug, placeId, visited, verified = false) 
 
 const PROVIDER_LABELS = { google: 'Google', apple: 'Apple', facebook: 'Facebook', spotify: 'Spotify', github: 'GitHub' };
 
-export function renderAuthModal(container, band, { onClose, onAdmin }) {
+export async function renderAuthModal(container, band, { onClose, onAdmin }) {
   if (!supabase) {
     container.innerHTML = `
       <h2>Your pilgrimage, saved here</h2>
-      <p class="modal-text">Accounts aren't switched on yet, so your check-ins and badges
-      are stored safely on this device. Once cloud accounts launch you'll be able to sign
-      in and keep your progress everywhere.</p>
+      <p class="modal-text">Accounts aren't switched on yet — check-ins and badges
+      are stored safely on this device for now.</p>
       <div class="sheet-actions">
         <button class="btn" data-admin>Admin tools</button>
         <button class="btn btn-primary" data-close>Got it</button>
@@ -97,43 +102,84 @@ export function renderAuthModal(container, band, { onClose, onAdmin }) {
   if (currentUser) {
     const name = currentUser.user_metadata?.full_name || currentUser.email || 'Devotee';
     const canAdmin = currentRole === 'admin' || currentRole === 'editor';
+    const bandRole = await getBandRole(band.slug);
+    const roleLabel = bandRole === 'band_rep' ? '★ Band Rep'
+      : bandRole === 'mod' ? '⚑ Mod'
+      : currentRole === 'admin' ? '⬡ Admin'
+      : null;
+
+    const avatar = currentUser.user_metadata?.avatar_url;
     container.innerHTML = `
-      <h2>Signed in</h2>
-      <p class="modal-text">${name}${currentRole ? `<span class="role-pill">${currentRole}</span>` : ''}</p>
-      <p class="modal-text dim">Your check-ins sync to your account automatically.</p>
+      <div class="auth-profile">
+        ${avatar ? `<img class="auth-avatar" src="${avatar}" alt="">` : '<div class="auth-avatar auth-avatar--placeholder">☻</div>'}
+        <div>
+          <strong>${name}</strong>
+          ${roleLabel ? `<span class="role-pill">${roleLabel}</span>` : ''}
+        </div>
+      </div>
+      <p class="modal-text dim">Check-ins sync to your account automatically.</p>
+      ${!bandRole && !canAdmin ? `
+        <details class="auth-rep-apply">
+          <summary>Apply to be band rep for ${band.name}</summary>
+          <p class="modal-text dim" style="margin-top:8px">Band reps are verified fans or representatives who manage the atlas content. Tell us why you should be the rep for ${band.name}:</p>
+          <textarea id="rep-justification" rows="3" placeholder="Your connection to the band, credentials, what you'd contribute…" style="width:100%;margin-top:8px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:13px;resize:vertical"></textarea>
+          <button class="btn btn-primary" id="rep-apply-btn" style="margin-top:8px;width:100%">Submit application</button>
+          <p class="modal-text dim" id="rep-apply-status"></p>
+        </details>` : ''}
       <div class="sheet-actions">
-        ${canAdmin ? '<button class="btn" data-admin>Admin tools</button>' : ''}
+        ${canAdmin ? '<button class="btn" data-admin>Admin panel</button>' : ''}
         <button class="btn" data-signout>Sign out</button>
         <button class="btn btn-primary" data-close>Done</button>
       </div>`;
+
     container.querySelector('[data-admin]')?.addEventListener('click', onAdmin);
     container.querySelector('[data-signout]').addEventListener('click', async () => {
-      await signOut();
-      onClose();
+      await signOut(); onClose();
     });
     container.querySelector('[data-close]').addEventListener('click', onClose);
+    container.querySelector('#rep-apply-btn')?.addEventListener('click', async () => {
+      const justification = container.querySelector('#rep-justification')?.value?.trim();
+      const status = container.querySelector('#rep-apply-status');
+      if (!justification) { status.textContent = 'Please write a few words first.'; return; }
+      const btn = container.querySelector('#rep-apply-btn');
+      btn.disabled = true; btn.textContent = 'Submitting…';
+      const { error } = await applyForBandRep(band.slug, justification);
+      if (error) {
+        status.textContent = `Error: ${error}`;
+        btn.disabled = false; btn.textContent = 'Submit application';
+      } else {
+        status.textContent = '✓ Application submitted — an admin will review it soon.';
+        btn.remove();
+      }
+    });
     return;
   }
 
-  const providers = (band.auth?.providers || []).filter((p) => PROVIDER_LABELS[p]);
+  // ── Signed out ──────────────────────────────────────────────────────────────
+  const providers = (band.auth?.providers || ['google']).filter((p) => PROVIDER_LABELS[p]);
   container.innerHTML = `
-    <h2>Sign in</h2>
-    <p class="modal-text dim">Keep your pilgrimage progress on every device.</p>
+    <h2>Sign in to ${band.name}</h2>
+    <p class="modal-text dim">Save your pilgrimage progress across every device.</p>
     <div class="auth-providers">
-      ${providers.map((p) => `<button class="btn auth-provider" data-provider="${p}">Continue with ${PROVIDER_LABELS[p]}</button>`).join('')}
+      ${providers.map((p) => `
+        <button class="btn auth-provider auth-provider--${p}" data-provider="${p}">
+          <span class="auth-provider-icon">${providerIcon(p)}</span>
+          Continue with ${PROVIDER_LABELS[p]}
+        </button>`).join('')}
     </div>
-    <div class="auth-divider"><span>or</span></div>
+    <div class="auth-divider"><span>or use email</span></div>
     <form class="auth-email" id="auth-email-form">
       <input type="email" id="auth-email" placeholder="you@example.com" required autocomplete="email" />
-      <button class="btn btn-primary" type="submit">Email me a magic link</button>
+      <button class="btn btn-primary" type="submit">Send me a magic link</button>
     </form>
-    <p class="modal-text dim" id="auth-status"></p>`;
+    <p class="modal-text dim" id="auth-status"></p>
+    <p class="auth-small">By signing in you agree to fan-use only. No spam, ever.</p>`;
 
   for (const btn of container.querySelectorAll('.auth-provider')) {
     btn.addEventListener('click', () => {
       supabase.auth.signInWithOAuth({
         provider: btn.dataset.provider,
-        options: { redirectTo: location.origin },
+        options: { redirectTo: location.origin + location.search },
       });
     });
   }
@@ -141,11 +187,17 @@ export function renderAuthModal(container, band, { onClose, onAdmin }) {
     e.preventDefault();
     const email = container.querySelector('#auth-email').value;
     const status = container.querySelector('#auth-status');
-    status.textContent = 'Sending…';
+    const submitBtn = e.target.querySelector('[type=submit]');
+    submitBtn.disabled = true; submitBtn.textContent = 'Sending…';
     const { error } = await supabase.auth.signInWithOtp({
       email,
-      options: { emailRedirectTo: location.origin },
+      options: { emailRedirectTo: location.origin + location.search },
     });
-    status.textContent = error ? `Hmm: ${error.message}` : '✓ Check your inbox for the sign-in link.';
+    submitBtn.textContent = 'Send me a magic link'; submitBtn.disabled = false;
+    status.textContent = error ? `Error: ${error.message}` : '✓ Check your inbox — link expires in 1 hour.';
   });
+}
+
+function providerIcon(p) {
+  return { google: 'G', apple: '⌘', github: '⌥', facebook: 'f', spotify: '♫' }[p] ?? '→';
 }

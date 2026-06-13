@@ -1,0 +1,163 @@
+{
+  "trips": [
+    {
+      "id": "basildon-story",
+      "emoji": "🏘️",
+      "title": "From Basildon, With Synths",
+      "description": "Five births, one new town, and the gigs that lit the fuse — the origin story, 1959–1981.",
+      "stops": [
+        "alan-wilder-born",
+        "vince-clarke-born",
+        "martin-gore-born",
+        "andy-fletcher-born",
+        "dave-gahan-born",
+        "basildon",
+        "first-gig",
+        "crocs-rayleigh",
+        "bridge-house",
+        "totp"
+      ],
+      "badge": "Composition of Sound"
+    },
+    {
+      "id": "albums-in-order",
+      "emoji": "💿",
+      "title": "Every Album, In Order",
+      "description": "All fifteen studio albums, from a south London church to the Californian coast.",
+      "stops": [
+        "speak-and-spell",
+        "a-broken-frame",
+        "construction-time-again",
+        "some-great-reward",
+        "black-celebration",
+        "music-for-the-masses",
+        "violator",
+        "sofad",
+        "ultra",
+        "exciter",
+        "playing-the-angel",
+        "sounds-of-the-universe",
+        "delta-machine",
+        "spirit",
+        "memento-mori"
+      ],
+      "badge": "Black Swarm"
+    },
+    {
+      "id": "conquering-america",
+      "emoji": "🇺🇸",
+      "title": "Conquering America",
+      "description": "From a Manhattan club in '82 to the Rose Bowl, a record-store riot and the Hall of Fame.",
+      "stops": [
+        "first-us-show",
+        "us-festival",
+        "rose-bowl",
+        "tower-records",
+        "dodger-stadium",
+        "world-violation-giants",
+        "msg",
+        "rock-hall"
+      ],
+      "badge": "Concert for the Masses"
+    },
+    {
+      "id": "violator",
+      "emoji": "🌹",
+      "title": "Violator: The Masterpiece",
+      "description": "From a Milan studio to a Sunset Strip riot — the making of the album that conquered the world.",
+      "stops": [
+        "logic-milan",
+        "puk",
+        "violator",
+        "personal-jesus-single",
+        "personal-jesus-video",
+        "enjoy-the-silence-single",
+        "enjoy-the-silence",
+        "world-in-my-eyes",
+        "tower-records",
+        "world-violation-giants"
+      ],
+      "badge": "Enjoy the Silence"
+    },
+    {
+      "id": "berlin-years",
+      "emoji": "🧱",
+      "title": "The Berlin Years",
+      "description": "The hall by the Wall and the city that turned synth-pop dark.",
+      "stops": [
+        "hansa",
+        "some-great-reward",
+        "black-celebration",
+        "live-in-berlin",
+        "waldbuehne"
+      ],
+      "badge": "Hall by the Wall"
+    },
+    {
+      "id": "corbijn-lens",
+      "emoji": "🎥",
+      "title": "Through Corbijn's Lens",
+      "description": "Deserts, mountains, warships and rooftops — the image-maker's greatest locations.",
+      "stops": [
+        "strangelove-video",
+        "people-are-people-video",
+        "personal-jesus-video",
+        "enjoy-the-silence",
+        "enjoy-the-silence-highlands",
+        "devotional-lievin",
+        "barrel-of-a-gun-video",
+        "its-no-good-video",
+        "one-night-in-paris",
+        "wrong-video",
+        "ghosts-again-video"
+      ],
+      "badge": "The Image Maker"
+    },
+    {
+      "id": "daves-journey",
+      "emoji": "🎤",
+      "title": "Dave's Journey",
+      "description": "From Epping to the Rose Bowl, through the abyss and out the other side.",
+      "stops": [
+        "dave-gahan-born",
+        "totp",
+        "rose-bowl",
+        "ultra",
+        "paper-monsters",
+        "soulsavers",
+        "memento-mori-opener"
+      ],
+      "badge": "The Voice"
+    },
+    {
+      "id": "vinces-path",
+      "emoji": "🎛️",
+      "title": "The Vince Clarke Multiverse",
+      "description": "Wrote the first hits, left after one album, and never stopped — Yazoo, Erasure, VCMG.",
+      "stops": [
+        "vince-clarke-born",
+        "speak-and-spell",
+        "vince-leaves",
+        "yazoo-upstairs",
+        "the-assembly-never-never",
+        "erasure-formed",
+        "vcmg-ssss"
+      ],
+      "badge": "Upstairs at Eric's"
+    },
+    {
+      "id": "memento-mori-tour",
+      "emoji": "🕊️",
+      "title": "Memento Mori",
+      "description": "Losing Fletch, and the tour that turned grief into one last triumph.",
+      "stops": [
+        "fletch-farewell",
+        "memento-mori",
+        "memento-mori-opener",
+        "memento-mori-twickenham",
+        "memento-mori-finale"
+      ],
+      "badge": "Ghosts Again"
+    }
+  ]
+}
