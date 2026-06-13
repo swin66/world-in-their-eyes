@@ -9,6 +9,39 @@
 --   band_rep  = owns/manages a specific band atlas
 --   mod       = moderates content for a specific band
 
+-- ─── profiles (create if schema.sql wasn't run first) ─────────────────────────
+create table if not exists public.profiles (
+  id      uuid primary key references auth.users(id) on delete cascade,
+  role    text not null default 'fan' check (role in ('admin','editor','fan')),
+  display_name text,
+  created_at   timestamptz not null default now()
+);
+alter table public.profiles enable row level security;
+create policy if not exists "own profile read" on public.profiles
+  for select using (auth.uid() = id);
+
+-- Auto-create profile on signup (idempotent)
+create or replace function public.handle_new_user() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id) values (new.id) on conflict do nothing;
+  return new;
+end; $$;
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- ─── app_role() helper (idempotent — safe to run even if already defined) ──────
+-- Returns the current user's platform role from profiles, or 'fan' as default.
+create or replace function public.app_role() returns text
+language sql stable security definer set search_path = public as $$
+  select coalesce(
+    (select role from public.profiles where id = auth.uid()),
+    'fan'
+  )
+$$;
+
 -- ─── band_roles ────────────────────────────────────────────────────────────────
 create table if not exists public.band_roles (
   user_id     uuid not null references auth.users(id) on delete cascade,
