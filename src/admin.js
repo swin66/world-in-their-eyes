@@ -574,17 +574,15 @@ function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
       const venueMap = new Map(); // venue.id → { venue, shows: [{date, url}] }
 
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-      const sfmFetch = async (p, attempt = 1) => {
+      const sfmFetch = async (p) => {
         const r = await fetch(`/api/setlistfm?artist=${encodeURIComponent(artist)}&p=${p}`, { headers: { 'x-sfm-key': key } });
-        if (r.status === 429 && attempt <= 3) {
-          const wait = attempt * 3000;
-          results.querySelector('p').textContent = `Rate limited — waiting ${wait / 1000}s then retrying…`;
-          await sleep(wait);
-          return sfmFetch(p, attempt + 1);
-        }
-        if (r.status === 401) throw new Error('Invalid API key');
+        if (r.status === 429) throw new Error('Rate limited (429). Wait 60 seconds then try again — start with 1 page to confirm your key is working.');
+        if (r.status === 401) throw new Error('Invalid API key — check it at setlist.fm/settings/api');
         if (r.status === 404) throw new Error('Artist not found on Setlist.fm');
-        if (!r.ok) throw new Error(`Setlist.fm error ${r.status}`);
+        if (!r.ok) {
+          const body = await r.text().catch(() => '');
+          throw new Error(`Setlist.fm error ${r.status}${body ? ': ' + body.slice(0, 120) : ''}`);
+        }
         return r.json();
       };
 

@@ -40,14 +40,15 @@ export async function onRequest(context) {
   });
 
   const body = await upstream.text();
-  return new Response(body, {
-    status: upstream.status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-      'Cache-Control': 'public, max-age=3600',
-    },
-  });
+  const isOk = upstream.status >= 200 && upstream.status < 300;
+  const retryAfter = upstream.headers.get('Retry-After');
+  const responseHeaders = {
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Cache-Control': isOk ? 'public, max-age=3600' : 'no-store',
+  };
+  if (retryAfter) responseHeaders['Retry-After'] = retryAfter;
+  return new Response(body, { status: upstream.status, headers: responseHeaders });
 }
 
 function json(obj, status = 200) {
