@@ -358,7 +358,7 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
   const artist = p.artistId ? state.artists.get(p.artistId) : null;
   const body = $('sheet-body');
   const heroImg = p.image || p.images?.[0];
-  const ttsAvailable = !!(ELEVENLABS_KEY && state.band.tts?.voiceId);
+  const ttsAvailable = !!(ELEVENLABS_KEY && state.band.tts && getVoiceForLang(getLang(), state.band.tts));
   body.innerHTML = `
     ${heroImg ? `<img class="sheet-hero" src="${heroImg}" alt="${tf(p, 'title')}" loading="lazy">` : ''}
     <span class="sheet-cat-bar" style="background:linear-gradient(90deg, ${cat.color}, transparent)"></span>
@@ -370,7 +370,16 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
       ${p.approx ? `<span class="sheet-approx">${t('approxLocation')}</span>` : ''}
       ${isVerified ? `<span class="sheet-approx sheet-verified">${t('verifiedVisit')}</span>` : ''}
     </div>
-    <h2>${tf(p, 'title') || p.title}</h2>
+    <div class="sheet-title-row">
+      <h2>${tf(p, 'title') || p.title}</h2>
+      ${ttsAvailable ? `
+        <button class="tts-fab" id="listen-btn" aria-label="Listen">
+          <span class="tts-fab-icon">▶</span>
+          <span class="audio-wave" id="audio-wave">
+            <span></span><span></span><span></span><span></span>
+          </span>
+        </button>` : ''}
+    </div>
     <p class="sheet-summary">${tf(p, 'summary') || p.summary}</p>
     <p class="sheet-story">${tf(p, 'story') || p.story}</p>
     ${triviaHTML(p)}
@@ -385,7 +394,6 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
       <button class="btn btn-primary" id="checkin-btn">
         ${visited ? t('visited') : state.band.gamification.checkinLabel}
       </button>
-      ${ttsAvailable ? `<button class="btn btn-listen" id="listen-btn">${t('listen')}</button>` : ''}
       <button class="btn" id="share-btn">${t('share')}</button>
     </div>
   `;
@@ -393,13 +401,19 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
   body.querySelector('#share-btn').addEventListener('click', () => shareFeature(p));
   body.querySelector('#add-memory-btn').addEventListener('click', () => openMemoryForm(feature));
   const listenBtn = body.querySelector('#listen-btn');
-  const triggerSpeak = (btn) => {
-    if (isSpeaking()) {
-      stopSpeaking();
-      if (btn) { btn.textContent = t('listen'); btn.disabled = false; }
-      return;
-    }
-    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+  const audioWave = body.querySelector('#audio-wave');
+
+  const setTtsState = (state) => {
+    if (!listenBtn) return;
+    const icon = listenBtn.querySelector('.tts-fab-icon');
+    if (state === 'loading') { icon.textContent = '⏳'; listenBtn.disabled = true; audioWave?.classList.remove('playing'); }
+    else if (state === 'playing') { icon.textContent = '⏸'; listenBtn.disabled = false; audioWave?.classList.add('playing'); }
+    else { icon.textContent = '▶'; listenBtn.disabled = false; audioWave?.classList.remove('playing'); }
+  };
+
+  const triggerSpeak = () => {
+    if (isSpeaking()) { stopSpeaking(); setTtsState('idle'); return; }
+    setTtsState('loading');
     const voiceId = getVoiceForLang(getLang(), state.band.tts);
     const text = [
       tf(p, 'title') || p.title,
@@ -412,15 +426,13 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
       voiceId,
       model: state.band.tts?.model,
       cacheKey: `${state.band.slug}:${p.id}:${getLang()}:${voiceId}`,
-      onEnd: () => { if (btn) { btn.textContent = t('listen'); btn.disabled = false; } },
-      onError: (msg) => { toast(`🔇 ${msg}`); if (btn) { btn.textContent = t('listen'); btn.disabled = false; } },
-    }).then((ok) => {
-      if (ok && btn) { btn.textContent = t('stopAudio'); btn.disabled = false; }
-    });
+      onEnd: () => setTtsState('idle'),
+      onError: (msg) => { toast(`🔇 ${msg}`); setTtsState('idle'); },
+    }).then((ok) => { if (ok) setTtsState('playing'); else setTtsState('idle'); });
   };
-  if (listenBtn) listenBtn.addEventListener('click', () => triggerSpeak(listenBtn));
-  // Auto-play if the user has opted in
-  if (ttsAvailable && getAutoplay()) triggerSpeak(listenBtn);
+
+  if (listenBtn) listenBtn.addEventListener('click', triggerSpeak);
+  if (ttsAvailable && getAutoplay()) triggerSpeak();
   if (slideDir) {
     body.classList.remove('stop-anim');
     void body.offsetWidth; // restart animation between consecutive stops
@@ -1384,16 +1396,16 @@ async function init() {
     attributionControl: { compact: true, customAttribution: band.map.attributionExtra },
   });
   state.map = map;
-  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-  map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: true }), 'bottom-right');
-  map.addControl(new BackControl(), 'bottom-right');
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-left');
+  map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: true }), 'bottom-left');
+  map.addControl(new BackControl(), 'bottom-left');
   map.addControl(new HomeControl(() => {
     if (state.trip) exitTrip();
     closeSheet();
     closeWall();
     spinning = true; // resume the idle globe after the flight home
     map.flyTo({ ...startView, duration: 1600 });
-  }), 'bottom-right');
+  }), 'bottom-left');
 
   // The idle globe spins gently until the user takes over.
   let spinKicked = false;

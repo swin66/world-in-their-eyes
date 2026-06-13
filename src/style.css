@@ -1338,8 +1338,8 @@ html, body, #app {
 }
 
 /* MapLibre tweaks */
-.maplibregl-ctrl-bottom-right { bottom: 74px; }
-.maplibregl-ctrl-bottom-left { bottom: 0; padding-bottom: 4px; }
+.maplibregl-ctrl-bottom-right { bottom: 0; }
+.maplibregl-ctrl-bottom-left { bottom: 74px; padding-left: 14px; }
 .maplibregl-ctrl-attrib {
   background: color-mix(in srgb, var(--bg) 60%, transparent) !important;
   color: color-mix(in srgb, var(--text) 50%, transparent);
@@ -1354,6 +1354,61 @@ html, body, #app {
   border: 1px solid var(--line);
 }
 [data-mode='dark'] .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1); }
+
+/* ---------- Sheet title row + TTS FAB ---------- */
+.sheet-title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.sheet-title-row h2 { flex: 1; margin: 0 0 8px; }
+
+.tts-fab {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--accent2) 60%, transparent);
+  background: color-mix(in srgb, var(--accent2) 12%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .15s, transform .15s;
+  position: relative;
+  overflow: visible;
+}
+.tts-fab:hover { background: color-mix(in srgb, var(--accent2) 22%, transparent); transform: scale(1.08); }
+.tts-fab:disabled { opacity: .5; cursor: default; transform: none; }
+
+/* Audio wave bars — visible when .playing */
+.audio-wave {
+  position: absolute;
+  bottom: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  gap: 2px;
+  align-items: flex-end;
+  height: 14px;
+}
+.audio-wave.playing { display: flex; }
+.audio-wave span {
+  width: 3px;
+  border-radius: 2px;
+  background: var(--accent2);
+  animation: wave-bar 1s ease-in-out infinite;
+}
+.audio-wave span:nth-child(1) { animation-delay: 0s;    height: 6px; }
+.audio-wave span:nth-child(2) { animation-delay: .15s;  height: 10px; }
+.audio-wave span:nth-child(3) { animation-delay: .3s;   height: 14px; }
+.audio-wave span:nth-child(4) { animation-delay: .45s;  height: 8px; }
+@keyframes wave-bar {
+  0%, 100% { transform: scaleY(.4); opacity: .6; }
+  50%       { transform: scaleY(1);  opacity: 1; }
+}
 
 /* ---------- Sheet hero image ---------- */
 .sheet-hero {
