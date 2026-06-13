@@ -3,7 +3,7 @@
 // as a trip, but it takes over the screen instead of moving the globe.
 
 import { t, getLang } from './i18n.js';
-import { speak, stopSpeaking, isSpeaking } from './tts.js';
+import { speak, stopSpeaking, isSpeaking, getVoiceForLang } from './tts.js';
 
 let active = null;
 
@@ -57,12 +57,13 @@ export function openSideshow(def, { onComplete, ttsConfig } = {}) {
         listenBtn.textContent = '⏳';
         listenBtn.disabled = true;
         const text = [card.subtitle, card.title, card.body].filter(Boolean).join('. ');
+        const voiceId = getVoiceForLang(getLang(), { voices: ttsConfig.voices, voiceId: ttsConfig.voiceId });
         speak({
           text,
           apiKey: ttsConfig.apiKey,
-          voiceId: ttsConfig.voiceId,
+          voiceId,
           model: ttsConfig.model,
-          cacheKey: `${ttsConfig.bandSlug}:sideshow:${def.id}:${index}:${getLang()}`,
+          cacheKey: `${ttsConfig.bandSlug}:sideshow:${def.id}:${index}:${getLang()}:${voiceId}`,
           onEnd: () => { listenBtn.textContent = t('listen'); listenBtn.disabled = false; },
           onError: () => { listenBtn.textContent = t('listen'); listenBtn.disabled = false; },
         }).then((ok) => {

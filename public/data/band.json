@@ -41,8 +41,13 @@
   },
   "languages": ["en", "fr", "de", "es"],
   "tts": {
-    "voiceId": "21m00Tcm4TlvDq8ikWAM",
-    "model": "eleven_multilingual_v2"
+    "model": "eleven_multilingual_v2",
+    "voices": {
+      "en": "21m00Tcm4TlvDq8ikWAM",
+      "fr": "21m00Tcm4TlvDq8ikWAM",
+      "de": "21m00Tcm4TlvDq8ikWAM",
+      "es": "21m00Tcm4TlvDq8ikWAM"
+    }
   },
   "auth": {
     "providers": ["google", "apple"]

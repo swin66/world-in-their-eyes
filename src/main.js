@@ -13,7 +13,7 @@ import { playIntro } from './intro.js';
 import { openSideshow } from './sideshow.js';
 import { maybeOnboard } from './onboarding.js';
 import { getLang, getLangs, getSupportedLangs, setLang, t, tf } from './i18n.js';
-import { speak, stopSpeaking, isSpeaking, clearCache } from './tts.js';
+import { speak, stopSpeaking, isSpeaking, clearCache, getVoiceForLang, setVoiceForLang, getAutoplay, setAutoplay, fetchVoices } from './tts.js';
 
 const ELEVENLABS_KEY = import.meta.env.VITE_ELEVENLABS_KEY || '';
 
@@ -393,33 +393,34 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
   body.querySelector('#share-btn').addEventListener('click', () => shareFeature(p));
   body.querySelector('#add-memory-btn').addEventListener('click', () => openMemoryForm(feature));
   const listenBtn = body.querySelector('#listen-btn');
-  if (listenBtn) {
-    listenBtn.addEventListener('click', () => {
-      if (isSpeaking()) {
-        stopSpeaking();
-        listenBtn.textContent = t('listen');
-        return;
-      }
-      listenBtn.textContent = '⏳';
-      listenBtn.disabled = true;
-      const text = [
-        tf(p, 'title') || p.title,
-        tf(p, 'summary') || p.summary,
-        tf(p, 'story') || p.story,
-      ].join('. ');
-      speak({
-        text,
-        apiKey: ELEVENLABS_KEY,
-        voiceId: state.band.tts.voiceId,
-        model: state.band.tts.model,
-        cacheKey: `${state.band.slug}:${p.id}:${getLang()}`,
-        onEnd: () => { listenBtn.textContent = t('listen'); listenBtn.disabled = false; },
-        onError: (msg) => { toast(`TTS: ${msg}`); listenBtn.textContent = t('listen'); listenBtn.disabled = false; },
-      }).then((ok) => {
-        if (ok) { listenBtn.textContent = t('stopAudio'); listenBtn.disabled = false; }
-      });
+  const triggerSpeak = (btn) => {
+    if (isSpeaking()) {
+      stopSpeaking();
+      if (btn) { btn.textContent = t('listen'); btn.disabled = false; }
+      return;
+    }
+    if (btn) { btn.textContent = '⏳'; btn.disabled = true; }
+    const voiceId = getVoiceForLang(getLang(), state.band.tts);
+    const text = [
+      tf(p, 'title') || p.title,
+      tf(p, 'summary') || p.summary,
+      tf(p, 'story') || p.story,
+    ].filter(Boolean).join('. ');
+    speak({
+      text,
+      apiKey: ELEVENLABS_KEY,
+      voiceId,
+      model: state.band.tts?.model,
+      cacheKey: `${state.band.slug}:${p.id}:${getLang()}:${voiceId}`,
+      onEnd: () => { if (btn) { btn.textContent = t('listen'); btn.disabled = false; } },
+      onError: (msg) => { toast(`🔇 ${msg}`); if (btn) { btn.textContent = t('listen'); btn.disabled = false; } },
+    }).then((ok) => {
+      if (ok && btn) { btn.textContent = t('stopAudio'); btn.disabled = false; }
     });
-  }
+  };
+  if (listenBtn) listenBtn.addEventListener('click', () => triggerSpeak(listenBtn));
+  // Auto-play if the user has opted in
+  if (ttsAvailable && getAutoplay()) triggerSpeak(listenBtn);
   if (slideDir) {
     body.classList.remove('stop-anim');
     void body.offsetWidth; // restart animation between consecutive stops
@@ -981,6 +982,7 @@ function openTrips() {
 function startSideshow(show) {
   const ttsConfig = state.band.tts && ELEVENLABS_KEY ? {
     apiKey: ELEVENLABS_KEY,
+    voices: state.band.tts.voices,
     voiceId: state.band.tts.voiceId,
     model: state.band.tts.model,
     bandSlug: state.band.slug,
@@ -1460,37 +1462,107 @@ function applyMapLanguage(lang) {
 }
 
 function openLangPicker() {
-  const allowed = (state.band.languages || getSupportedLangs()).filter(
-    (l) => getLangs()[l],
-  );
-  if (allowed.length <= 1) return;
-  const cur = getLang();
+  const allowed = (state.band.languages || getSupportedLangs()).filter((l) => getLangs()[l]);
+  const ttsOn = !!(ELEVENLABS_KEY && state.band.tts);
+
   openModal((card, close) => {
-    card.innerHTML = `
-      <h2>🌐 Language</h2>
-      <p class="modal-text dim">Choose your language for the UI and audio narration.</p>
-      <div class="lang-grid">
-        ${allowed.map((l) => {
-          const info = getLangs()[l];
-          return `<button class="lang-opt ${l === cur ? 'lang-opt--on' : ''}" data-lang="${l}">
-            <span class="lang-flag">${info.flag}</span>
-            <span>${info.name}</span>
-          </button>`;
-        }).join('')}
-      </div>`;
-    for (const btn of card.querySelectorAll('.lang-opt')) {
-      btn.addEventListener('click', () => {
-        setLang(btn.dataset.lang, state.band.languages);
-        applyMapLanguage(getLang());
-        close();
-        // Refresh open sheet to re-render translated labels
-        if (state.selectedId) {
-          const f = featureById(state.selectedId);
-          if (f) openSheet(f, null, 0, true);
-        }
-        toast(`${getLangs()[getLang()].flag} ${getLangs()[getLang()].name}`);
+    const renderCard = () => {
+      const cur = getLang();
+      card.innerHTML = `
+        <h2>🌐 Language & Voice</h2>
+        <p class="modal-text dim">UI language, map labels and audio narration.</p>
+        <div class="lang-grid">
+          ${allowed.map((l) => {
+            const info = getLangs()[l];
+            return `<button class="lang-opt ${l === cur ? 'lang-opt--on' : ''}" data-lang="${l}">
+              <span class="lang-flag">${info.flag}</span>
+              <span>${info.name}</span>
+            </button>`;
+          }).join('')}
+        </div>
+        ${ttsOn ? `
+        <div class="tts-settings">
+          <div class="admin-row">
+            <span>🔊 Auto-play narration</span>
+            <label class="toggle">
+              <input type="checkbox" id="autoplay-toggle" ${getAutoplay() ? 'checked' : ''}>
+              <span class="toggle-track"></span>
+            </label>
+          </div>
+          <div class="admin-row" style="align-items:flex-start;flex-direction:column;gap:8px">
+            <span style="font-size:13px;opacity:.7">Voice for <strong>${getLangs()[cur].flag} ${getLangs()[cur].name}</strong></span>
+            <button class="btn" id="pick-voice-btn" style="width:100%;text-align:left">
+              ${getVoiceLabel(cur)} <span style="opacity:.5;float:right">▾ change</span>
+            </button>
+          </div>
+        </div>` : ''}`;
+
+      for (const btn of card.querySelectorAll('.lang-opt')) {
+        btn.addEventListener('click', () => {
+          setLang(btn.dataset.lang, state.band.languages);
+          applyMapLanguage(getLang());
+          if (state.selectedId) {
+            const f = featureById(state.selectedId);
+            if (f) openSheet(f, null, 0, true);
+          }
+          toast(`${getLangs()[getLang()].flag} ${getLangs()[getLang()].name}`);
+          renderCard(); // re-render to update "voice for X" label
+        });
+      }
+
+      card.querySelector('#autoplay-toggle')?.addEventListener('change', (e) => {
+        setAutoplay(e.target.checked);
       });
-    }
+
+      card.querySelector('#pick-voice-btn')?.addEventListener('click', () => {
+        openVoicePicker(getLang(), () => renderCard());
+      });
+    };
+
+    renderCard();
+  });
+}
+
+function getVoiceLabel(lang) {
+  const vid = getVoiceForLang(lang, state.band.tts);
+  const cached = _voiceCache.find((v) => v.voice_id === vid);
+  return cached ? `${cached.name}` : vid ? `${vid.slice(0, 12)}…` : 'Not set';
+}
+
+let _voiceCache = [];
+
+function openVoicePicker(lang, onPick) {
+  openModal((card, close) => {
+    card.innerHTML = `<h2>🎙 Choose a voice</h2><p class="modal-text dim">Loading your ElevenLabs voices…</p>`;
+    fetchVoices(ELEVENLABS_KEY).then((voices) => {
+      _voiceCache = voices;
+      const cur = getVoiceForLang(lang, state.band.tts);
+      if (!voices.length) {
+        card.innerHTML += `<p class="modal-text dim">No voices found. Check your API key.</p>`;
+        return;
+      }
+      const list = document.createElement('div');
+      list.className = 'voice-list';
+      list.innerHTML = voices.map((v) => {
+        const accent = v.labels?.accent || '';
+        const desc = [accent, v.labels?.gender, v.labels?.age].filter(Boolean).join(' · ');
+        return `<button class="voice-opt ${v.voice_id === cur ? 'voice-opt--on' : ''}" data-vid="${v.voice_id}">
+          <strong>${v.name}</strong>
+          ${desc ? `<span class="voice-desc">${desc}</span>` : ''}
+        </button>`;
+      }).join('');
+      card.querySelector('p').remove();
+      card.appendChild(list);
+      for (const btn of list.querySelectorAll('.voice-opt')) {
+        btn.addEventListener('click', () => {
+          setVoiceForLang(lang, btn.dataset.vid);
+          clearCache(); // old cached audio used the old voice — invalidate
+          close();
+          onPick?.();
+          toast(`Voice set to ${voices.find((v) => v.voice_id === btn.dataset.vid)?.name}`);
+        });
+      }
+    });
   });
 }
 

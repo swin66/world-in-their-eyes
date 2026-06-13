@@ -1427,3 +1427,63 @@ html, body, #app {
 .lang-opt:hover { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
 .lang-opt--on { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 18%, transparent); font-weight: 600; }
 .lang-flag { font-size: 26px; }
+
+/* ---------- TTS settings ---------- */
+.tts-settings {
+  margin-top: 18px;
+  border-top: 1px solid var(--line);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Toggle switch */
+.toggle { position: relative; display: inline-block; width: 44px; height: 26px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 18%, transparent);
+  transition: background .2s;
+  cursor: pointer;
+}
+.toggle-track::after {
+  content: '';
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: var(--text);
+  transition: transform .2s;
+}
+.toggle input:checked + .toggle-track { background: var(--accent2); }
+.toggle input:checked + .toggle-track::after { transform: translateX(18px); }
+
+/* Voice list */
+.voice-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+.voice-opt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 10px 13px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  color: var(--text);
+  font-size: 14px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.voice-opt:hover { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 8%, transparent); }
+.voice-opt--on { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 16%, transparent); }
+.voice-desc { font-size: 11px; opacity: .55; text-transform: capitalize; }

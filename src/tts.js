@@ -1,6 +1,6 @@
 // ElevenLabs TTS with IndexedDB cache.
-// Audio blobs are stored keyed by `${bandSlug}:${cacheKey}:${lang}` so repeated
-// reads of the same card don't incur API costs.
+// Blobs are stored as ArrayBuffers to survive the IndexedDB round-trip without
+// losing their MIME type (Blob.type is not preserved in all browsers/versions).
 
 const DB_NAME = 'wite-tts-cache';
 const STORE = 'audio';
@@ -17,20 +17,21 @@ function openDB() {
 async function cacheGet(key) {
   try {
     const db = await openDB();
-    return await new Promise((resolve) => {
+    const buf = await new Promise((resolve) => {
       const req = db.transaction(STORE).objectStore(STORE).get(key);
       req.onsuccess = () => resolve(req.result ?? null);
       req.onerror = () => resolve(null);
     });
+    return buf ? new Blob([buf], { type: 'audio/mpeg' }) : null;
   } catch { return null; }
 }
 
-async function cachePut(key, blob) {
+async function cachePut(key, arrayBuffer) {
   try {
     const db = await openDB();
     await new Promise((resolve) => {
       const tx = db.transaction(STORE, 'readwrite');
-      tx.objectStore(STORE).put(blob, key);
+      tx.objectStore(STORE).put(arrayBuffer, key);
       tx.oncomplete = resolve;
       tx.onerror = resolve;
     });
@@ -49,6 +50,44 @@ export function isSpeaking() {
   return !!_audio && !_audio.paused && !_audio.ended;
 }
 
+// --- Voice preferences (per language, stored in localStorage) ---
+
+const LS_VOICES = 'wite:tts:voices';
+const LS_AUTOPLAY = 'wite:tts:autoplay';
+
+export function getVoiceForLang(lang, bandTts) {
+  const overrides = JSON.parse(localStorage.getItem(LS_VOICES) || '{}');
+  return overrides[lang] ?? bandTts?.voices?.[lang] ?? bandTts?.voiceId ?? null;
+}
+
+export function setVoiceForLang(lang, voiceId) {
+  const overrides = JSON.parse(localStorage.getItem(LS_VOICES) || '{}');
+  overrides[lang] = voiceId;
+  localStorage.setItem(LS_VOICES, JSON.stringify(overrides));
+}
+
+export function getAutoplay() {
+  return localStorage.getItem(LS_AUTOPLAY) === 'true';
+}
+
+export function setAutoplay(on) {
+  localStorage.setItem(LS_AUTOPLAY, on ? 'true' : 'false');
+}
+
+// Fetch the caller's available voices from ElevenLabs.
+export async function fetchVoices(apiKey) {
+  try {
+    const res = await fetch('https://api.elevenlabs.io/v1/voices', {
+      headers: { 'xi-api-key': apiKey },
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.voices || []).sort((a, b) => a.name.localeCompare(b.name));
+  } catch { return []; }
+}
+
+// --- Speak ---
+
 export async function speak({ text, apiKey, voiceId, model = 'eleven_multilingual_v2', cacheKey, onEnd, onError }) {
   stopSpeaking();
   if (!apiKey || !voiceId || !text) return false;
@@ -66,9 +105,14 @@ export async function speak({ text, apiKey, voiceId, model = 'eleven_multilingua
           voice_settings: { stability: 0.45, similarity_boost: 0.75 },
         }),
       });
-      if (!res.ok) { onError?.(`TTS error ${res.status}`); return false; }
-      blob = await res.blob();
-      await cachePut(cacheKey, blob);
+      if (!res.ok) {
+        const msg = await res.text().catch(() => res.status);
+        onError?.(`TTS ${res.status}: ${msg}`);
+        return false;
+      }
+      const buf = await res.arrayBuffer();
+      await cachePut(cacheKey, buf);
+      blob = new Blob([buf], { type: 'audio/mpeg' });
     } catch (err) {
       onError?.(err.message);
       return false;
@@ -77,15 +121,18 @@ export async function speak({ text, apiKey, voiceId, model = 'eleven_multilingua
 
   _blobUrl = URL.createObjectURL(blob);
   _audio = new Audio(_blobUrl);
-  _audio.onended = () => {
+  _audio.onended = () => { stopSpeaking(); onEnd?.(); };
+  _audio.onerror = (e) => {
     stopSpeaking();
-    onEnd?.();
+    onError?.(`Playback failed (${_audio?.error?.code ?? e.type})`);
   };
-  _audio.onerror = () => {
+  try {
+    await _audio.play();
+  } catch (err) {
     stopSpeaking();
-    onError?.('Playback failed');
-  };
-  _audio.play();
+    onError?.(err.message);
+    return false;
+  }
   return true;
 }
 
