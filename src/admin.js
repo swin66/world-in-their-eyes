@@ -573,8 +573,10 @@ function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
     try {
       const venueMap = new Map(); // venue.id → { venue, shows: [{date, url}] }
 
+      const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       for (let p = 1; p <= pages; p++) {
         results.querySelector('p').textContent = `Fetching page ${p} of ${pages}…`;
+        if (p > 1) await sleep(1200); // stay under Setlist.fm's 1 req/s free limit
         const data = await fetch(
           `/api/setlistfm?artist=${encodeURIComponent(artist)}&p=${p}`,
           { headers: { 'x-sfm-key': key } },
