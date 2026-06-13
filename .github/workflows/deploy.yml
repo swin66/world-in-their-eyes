@@ -20,8 +20,8 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_ELEVENLABS_KEY: ${{ secrets.VITE_ELEVENLABS_KEY }}
       - name: Create Pages project if missing
         run: npx wrangler pages project create world-in-their-eyes --production-branch=main || true
