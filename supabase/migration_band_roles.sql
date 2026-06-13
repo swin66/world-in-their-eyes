@@ -11,10 +11,10 @@
 
 -- ─── band_roles ────────────────────────────────────────────────────────────────
 create table if not exists public.band_roles (
-  user_id     uuid not null references public.profiles(id) on delete cascade,
-  band_slug   text not null references public.bands(slug) on delete cascade,
+  user_id     uuid not null references auth.users(id) on delete cascade,
+  band_slug   text not null,
   role        text not null check (role in ('band_rep','mod')),
-  granted_by  uuid references public.profiles(id),
+  granted_by  uuid references auth.users(id),
   granted_at  timestamptz not null default now(),
   primary key (user_id, band_slug)
 );
@@ -47,12 +47,12 @@ create policy "band_rep manages mods"
 -- Platform admins review and approve/reject.
 create table if not exists public.band_rep_applications (
   id            uuid primary key default gen_random_uuid(),
-  user_id       uuid not null references public.profiles(id) on delete cascade,
+  user_id       uuid not null references auth.users(id) on delete cascade,
   band_slug     text not null references public.bands(slug) on delete cascade,
   justification text not null,
   status        text not null default 'pending'
                 check (status in ('pending','approved','rejected')),
-  reviewed_by   uuid references public.profiles(id),
+  reviewed_by   uuid references auth.users(id),
   reviewed_at   timestamptz,
   created_at    timestamptz not null default now(),
   unique (user_id, band_slug)

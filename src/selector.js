@@ -17,7 +17,7 @@ export async function showSelector() {
             <span class="sel-spin">◆</span> Loading…
           </div>
         </div>
-        <footer class="sel-footer">Fan-made · Non-commercial · Open source</footer>
+        <footer class="sel-footer">Powered by World in Their Eyes</footer>
       </div>`;
 
     document.body.appendChild(el);
