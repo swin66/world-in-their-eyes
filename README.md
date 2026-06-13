@@ -115,8 +115,12 @@ and its own badge (each trip's `badge` field).
   Trips tab (title, emoji, badge, ordered stop picker with reorder). Saved to
   the `trips` table in cloud mode, or downloaded as `trips.json` locally.
 - The app opens on a **slowly spinning globe** centred on the median of all
-  plotted places; any interaction takes over, and the ⌂ home control returns
-  to the spinning globe (and exits any running trip).
+  plotted places, with **sonar pings** rippling out from random places to make
+  the world feel alive; any interaction takes over, and the ⌂ home control
+  returns to the spinning globe (and exits any running trip).
+- Trip routes are drawn as **great-circle arcs** that bow over the globe (not
+  flat chords), with an accent→accent2 gradient, a soft glow underlay, a white
+  "comet" pulse that travels the route, and a pulsing ring on the current stop.
 
 Story walls open inside a **three.js planetarium** — a slowly rotating sphere
 of glowing particles in the band's colours with pointer parallax

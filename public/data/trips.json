@@ -61,6 +61,25 @@
       "badge": "Concert for the Masses"
     },
     {
+      "id": "violator",
+      "emoji": "🌹",
+      "title": "Violator: The Masterpiece",
+      "description": "From a Milan studio to a Sunset Strip riot — the making of the album that conquered the world.",
+      "stops": [
+        "logic-milan",
+        "puk",
+        "violator",
+        "personal-jesus-single",
+        "personal-jesus-video",
+        "enjoy-the-silence-single",
+        "enjoy-the-silence",
+        "world-in-my-eyes",
+        "tower-records",
+        "world-violation-giants"
+      ],
+      "badge": "Enjoy the Silence"
+    },
+    {
       "id": "berlin-years",
       "emoji": "🧱",
       "title": "The Berlin Years",
@@ -80,12 +99,14 @@
       "title": "Through Corbijn's Lens",
       "description": "Deserts, mountains, warships and rooftops — the image-maker's greatest locations.",
       "stops": [
+        "strangelove-video",
         "people-are-people-video",
         "personal-jesus-video",
         "enjoy-the-silence",
         "enjoy-the-silence-highlands",
         "devotional-lievin",
         "barrel-of-a-gun-video",
+        "its-no-good-video",
         "one-night-in-paris",
         "wrong-video",
         "ghosts-again-video"

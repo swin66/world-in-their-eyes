@@ -1072,6 +1072,122 @@
         "summary": "Clarke × Gore, reunited by email.",
         "story": "Thirty years after Vince walked out, Clarke and Gore made a full-on techno album together for Mute — almost entirely by swapping files, barely in the same room. The most Depeche Mode reunion imaginable."
       }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [9.19, 45.4642] },
+      "properties": {
+        "id": "logic-milan",
+        "title": "Logic Studios, Milan",
+        "category": "studio",
+        "year": 1989,
+        "approx": true,
+        "summary": "Where Violator was born.",
+        "story": "Early in 1989 the band decamped to Milan's Logic Studios to begin Violator with producer Flood. Personal Jesus took shape here before the sessions moved north to Puk in Denmark — the first sparks of their masterpiece."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.2089, 51.5101] },
+      "properties": {
+        "id": "westside-london",
+        "title": "Westside Studios, London",
+        "category": "studio",
+        "year": 1986,
+        "approx": true,
+        "summary": "Building Black Celebration.",
+        "story": "Much of Black Celebration was tracked at Westside in west London before mixing at Hansa. The album where Depeche Mode fully embraced the dark — Stripped, A Question of Time, and the title-track dread that defined a generation of fans."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-0.2825, 51.5582] },
+      "properties": {
+        "id": "wembley-arena",
+        "title": "Wembley Arena, London",
+        "category": "gig",
+        "year": 1988,
+        "summary": "The London homecoming room.",
+        "story": "Across the Music for the Masses, World Violation and Devotional tours, Wembley Arena was the band's London stronghold — sweaty, ecstatic nights that turned a generation of British kids into lifelong devotees."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [5.9989, 50.8932] },
+      "properties": {
+        "id": "pinkpop",
+        "title": "Pinkpop Festival, Netherlands",
+        "category": "gig",
+        "year": 1984,
+        "approx": true,
+        "summary": "Mainland Europe falls hard.",
+        "story": "A blazing 1984 Pinkpop set in Landgraaf helped cement the Low Countries as Depeche Mode heartland — a devotion that has never cooled across four decades of return visits."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [4.66, 50.9886] },
+      "properties": {
+        "id": "torhout-werchter",
+        "title": "Rock Werchter, Belgium",
+        "category": "gig",
+        "year": 1984,
+        "approx": true,
+        "summary": "Festival fields of Flanders.",
+        "story": "The twin Torhout–Werchter festival in the summer of 1984 put the young band in front of vast Belgian crowds — another European territory won by sheer relentless touring."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-58.3816, -34.6037] },
+      "properties": {
+        "id": "buenos-aires-exotic",
+        "title": "Buenos Aires, Argentina",
+        "category": "gig",
+        "year": 1994,
+        "approx": true,
+        "summary": "The Exotic Tour hits South America.",
+        "story": "On the punishing 1994 Exotic Tour, Depeche Mode reached Argentina for the first time — a continent of new devotees discovered just as the band was burning itself to the ground. The fans never forgot."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [10.046, 56.5377] },
+      "properties": {
+        "id": "world-in-my-eyes",
+        "title": "World in My Eyes — single",
+        "category": "release",
+        "year": 1990,
+        "approx": true,
+        "summary": "Let me take you on a trip.",
+        "story": "The final single from Violator, recorded at Puk in Denmark — Martin Gore's hymn to intimacy and travel. \"Let me take you on a trip\": the song that gives this atlas its name and its spirit."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [2.3412, 48.8698] },
+      "properties": {
+        "id": "strangelove-video",
+        "title": "Strangelove video, Paris",
+        "category": "video",
+        "year": 1987,
+        "approx": true,
+        "summary": "Corbijn's first DM video.",
+        "story": "Anton Corbijn shot Strangelove in moody monochrome Paris — the beginning of a creative partnership that would shape the band's entire visual identity for the next forty years."
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": { "type": "Point", "coordinates": [-115.1728, 36.1147] },
+      "properties": {
+        "id": "its-no-good-video",
+        "title": "It's No Good video, Las Vegas",
+        "category": "video",
+        "year": 1997,
+        "approx": true,
+        "summary": "Dave as the lounge act from hell.",
+        "story": "Corbijn cast Dave Gahan as a washed-up Vegas crooner playing to empty tables — gloriously self-aware comedy from a band that had just stared down the abyss and lived to laugh about it."
+      }
     }
   ]
 }

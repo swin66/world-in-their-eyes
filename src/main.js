@@ -526,9 +526,68 @@ function spinStep() {
 function startSpin() {
   spinning = true;
   spinStep();
+  startPings();
 }
 function stopSpin() {
   spinning = false;
+  stopPings();
+}
+
+// Sonar pings: while the globe idles, random places pulse expanding rings —
+// little "something happened here" heartbeats that invite a closer look.
+let pingTimer = null;
+let pingTicker = null;
+let pings = [];
+
+function ensurePingLayer() {
+  const map = state.map;
+  if (map.getSource('pings')) return;
+  map.addSource('pings', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+  map.addLayer({
+    id: 'pings',
+    type: 'circle',
+    source: 'pings',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['get', 'p'], 0, 2, 1, 30],
+      'circle-color': 'transparent',
+      'circle-stroke-width': ['interpolate', ['linear'], ['get', 'p'], 0, 2.5, 1, 0.5],
+      'circle-stroke-color': currentTheme().accent,
+      'circle-stroke-opacity': ['interpolate', ['linear'], ['get', 'p'], 0, 0.85, 1, 0],
+    },
+  }, state.map.getLayer('clusters') ? 'clusters' : undefined);
+}
+
+function startPings() {
+  stopPings();
+  ensurePingLayer();
+  pingTimer = setInterval(() => {
+    const features = state.places.features;
+    const pick = features[Math.floor(Math.random() * features.length)];
+    pings.push({ coords: pick.geometry.coordinates, born: performance.now() });
+  }, 800);
+  pingTicker = setInterval(() => {
+    const now = performance.now();
+    pings = pings.filter((ping) => now - ping.born < 1600);
+    state.map.getSource('pings')?.setData({
+      type: 'FeatureCollection',
+      features: pings.map((ping) => ({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: ping.coords },
+        properties: { p: (now - ping.born) / 1600 },
+      })),
+    });
+  }, 50);
+}
+
+function stopPings() {
+  clearInterval(pingTimer);
+  clearInterval(pingTicker);
+  pingTimer = pingTicker = null;
+  pings = [];
+  state.map?.getSource('pings')?.setData({ type: 'FeatureCollection', features: [] });
 }
 
 /* ---------- Trips (guided journeys) ---------- */
@@ -559,48 +618,157 @@ function tripFeatures(trip) {
 function ensureTripLayer() {
   const map = state.map;
   if (map.getSource('trip')) return;
+  // lineMetrics lets us run a gradient (and a travelling pulse) along the arc.
   map.addSource('trip', {
     type: 'geojson',
+    lineMetrics: true,
     data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } },
   });
+  // Soft glow underlay.
+  map.addLayer({
+    id: 'trip-glow',
+    type: 'line',
+    source: 'trip',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': currentTheme().accent2,
+      'line-width': 9,
+      'line-opacity': 0.18,
+      'line-blur': 6,
+    },
+  }, map.getLayer('clusters') ? 'clusters' : undefined);
+  // Main arc with an accent→accent2 gradient running its length.
   map.addLayer({
     id: 'trip-line',
     type: 'line',
     source: 'trip',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
     paint: {
-      'line-color': currentTheme().accent,
-      'line-width': 2.5,
-      'line-dasharray': [0.8, 1.6],
-      'line-opacity': 0.85,
+      'line-width': 2.6,
+      'line-gradient': [
+        'interpolate', ['linear'], ['line-progress'],
+        0, currentTheme().accent,
+        1, currentTheme().accent2,
+      ],
     },
   }, map.getLayer('clusters') ? 'clusters' : undefined);
+  // Pulsing "you are here" ring at the current stop (animated in the dash tick).
+  map.addSource('trip-here', {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] },
+  });
+  map.addLayer({
+    id: 'trip-here',
+    type: 'circle',
+    source: 'trip-here',
+    paint: {
+      'circle-radius': 8,
+      'circle-color': 'transparent',
+      'circle-stroke-color': currentTheme().accent,
+      'circle-stroke-width': 2.5,
+      'circle-stroke-opacity': 0.8,
+    },
+  });
 }
 
-// "Marching ants" glow along the active trip route.
-const DASH_FRAMES = [
-  [0, 4, 3], [0.5, 4, 2.5], [1, 4, 2], [1.5, 4, 1.5],
-  [2, 4, 1], [2.5, 4, 0.5], [3, 4, 0], [0, 0.5, 3, 3.5],
-];
-let dashTimer = null;
+let tripHereCoords = null;
+function setTripHere(coords) {
+  tripHereCoords = coords;
+  state.map.getSource('trip-here')?.setData({
+    type: 'FeatureCollection',
+    features: coords ? [{ type: 'Feature', geometry: { type: 'Point', coordinates: coords } }] : [],
+  });
+}
+
+// Slerp between two lng/lat points along the globe's surface, so the route
+// bows over the sphere instead of cutting a flat chord across it.
+function greatCircle(a, b, segments = 48) {
+  const toRad = Math.PI / 180;
+  const [lng1, lat1] = a.map((v) => v * toRad);
+  const [lng2, lat2] = b.map((v) => v * toRad);
+  const d = 2 * Math.asin(Math.sqrt(
+    Math.sin((lat2 - lat1) / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin((lng2 - lng1) / 2) ** 2));
+  if (d === 0) return [a, b];
+  const pts = [];
+  for (let i = 0; i <= segments; i++) {
+    const f = i / segments;
+    const A = Math.sin((1 - f) * d) / Math.sin(d);
+    const B = Math.sin(f * d) / Math.sin(d);
+    const x = A * Math.cos(lat1) * Math.cos(lng1) + B * Math.cos(lat2) * Math.cos(lng2);
+    const y = A * Math.cos(lat1) * Math.sin(lng1) + B * Math.cos(lat2) * Math.sin(lng2);
+    const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+    pts.push([
+      Math.atan2(y, x) / toRad,
+      Math.atan2(z, Math.sqrt(x * x + y * y)) / toRad,
+    ]);
+  }
+  return pts;
+}
+
+function arcThroughStops(trip) {
+  const coords = tripFeatures(trip).map((f) => f.geometry.coordinates);
+  const path = [];
+  for (let i = 0; i < coords.length - 1; i++) {
+    const seg = greatCircle(coords[i], coords[i + 1]);
+    path.push(...(i === 0 ? seg : seg.slice(1)));
+  }
+  return path;
+}
+
+// A bright comet travels along the arc — slower and more deliberate than the
+// old marching ants, with a soft trailing fade.
+let dashRaf = null;
 function startTripDash() {
   stopTripDash();
-  let frame = 0;
-  dashTimer = setInterval(() => {
-    if (!state.map.getLayer('trip-line')) return;
-    frame = (frame + 1) % DASH_FRAMES.length;
-    state.map.setPaintProperty('trip-line', 'line-dasharray', DASH_FRAMES[frame]);
-  }, 90);
+  const map = state.map;
+  const t0 = performance.now();
+  const PERIOD = 4200; // ms for the pulse to traverse the whole route
+  const tick = (now) => {
+    if (!map.getLayer('trip-line')) { dashRaf = requestAnimationFrame(tick); return; }
+    const base = currentTheme().accent;
+    const glow = currentTheme().accent2;
+    const head = ((now - t0) % PERIOD) / PERIOD;
+    const tail = 0.18; // length of the glowing comet trailing the head
+
+    // Build strictly-ascending colour stops for a white comet riding the arc.
+    const stops = new Map();
+    stops.set(0, base);
+    const lo = head - tail;
+    if (lo > 0) { stops.set(lo, base); }
+    stops.set(head, '#ffffff');
+    stops.set(1, glow);
+    const sorted = [...stops.entries()].sort((a, b) => a[0] - b[0]);
+    const expr = ['interpolate', ['linear'], ['line-progress']];
+    let prev = -1;
+    for (const [pos, color] of sorted) {
+      const p = Math.min(1, Math.max(0, pos));
+      if (p <= prev) continue; // guarantee strictly ascending
+      expr.push(p, color);
+      prev = p;
+    }
+    map.setPaintProperty('trip-line', 'line-gradient', expr);
+
+    // Pulse the current-stop ring: radius expands, opacity fades, on a loop.
+    if (tripHereCoords && map.getLayer('trip-here')) {
+      const pulse = ((now - t0) % 1700) / 1700;
+      map.setPaintProperty('trip-here', 'circle-radius', 8 + pulse * 24);
+      map.setPaintProperty('trip-here', 'circle-stroke-opacity', 0.85 * (1 - pulse));
+    }
+    dashRaf = requestAnimationFrame(tick);
+  };
+  dashRaf = requestAnimationFrame(tick);
 }
 function stopTripDash() {
-  clearInterval(dashTimer);
-  dashTimer = null;
+  cancelAnimationFrame(dashRaf);
+  dashRaf = null;
 }
 
 function drawTripLine(trip) {
   ensureTripLayer();
   state.map.getSource('trip').setData({
     type: 'Feature',
-    geometry: { type: 'LineString', coordinates: tripFeatures(trip).map((f) => f.geometry.coordinates) },
+    geometry: { type: 'LineString', coordinates: arcThroughStops(trip) },
   });
 }
 
@@ -650,6 +818,7 @@ function goToStop(index) {
   $('trip-step').textContent = `${trip.index + 1} / ${features.length} · ${feature.properties.year}`;
   [...$('trip-progress').children].forEach((seg, i) =>
     seg.classList.toggle('trip-seg-done', i <= trip.index));
+  setTripHere(feature.geometry.coordinates);
   openSheet(feature, 9, dir);
   syncTripCountdown();
   scheduleAdvance();
@@ -663,6 +832,7 @@ function exitTrip() {
   $('trip-bar').hidden = true;
   state.map.getSource('trip')?.setData(
     { type: 'Feature', geometry: { type: 'LineString', coordinates: [] } });
+  setTripHere(null);
   closeSheet();
 }
 
@@ -997,10 +1167,10 @@ async function init() {
   }), 'bottom-right');
 
   // The idle globe spins gently until the user takes over.
+  let spinKicked = false;
   map.on('moveend', () => { if (spinning) spinStep(); });
   map.getCanvas().addEventListener('pointerdown', stopSpin);
   map.on('wheel', stopSpin);
-  if (!location.hash) map.once('load', startSpin);
   map.on('click', (e) => {
     // Only close the sheet when the click wasn't on a point/cluster
     const hits = map.queryRenderedFeatures(e.point, { layers: ['points', 'clusters'].filter((l) => map.getLayer(l)) });
@@ -1011,7 +1181,11 @@ async function init() {
   map.on('style.load', () => {
     map.setProjection({ type: 'globe' });
     addDataLayers();
-    if (state.trip) drawTripLine(state.trip.def); // survive mode toggles
+    if (state.trip) { drawTripLine(state.trip.def); setTripHere(tripHereCoords); startTripDash(); } // survive mode toggles
+    // Kick off the idle spin once, as soon as the style+layers are ready
+    // (more reliable than waiting on 'load', which can stall on slow tiles).
+    if (!spinKicked && !state.trip && !location.hash) { spinKicked = true; startSpin(); }
+    else if (spinning) startPings();
   });
   bindMapInteractions();
   // Belt-and-braces: some embedded webviews don't fire MapLibre's own observer
