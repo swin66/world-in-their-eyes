@@ -39,6 +39,11 @@
     "milestone": { "label": "Milestones", "color": "#5aa7e8", "icon": "★" },
     "offshoot": { "label": "Offshoots", "color": "#9ad14b", "icon": "✚" }
   },
+  "languages": ["en", "fr", "de", "es"],
+  "tts": {
+    "voiceId": "21m00Tcm4TlvDq8ikWAM",
+    "model": "eleven_multilingual_v2"
+  },
   "auth": {
     "providers": ["google", "apple"]
   },

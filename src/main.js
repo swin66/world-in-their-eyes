@@ -12,6 +12,10 @@ import { openWall, closeWall } from './wall.js';
 import { playIntro } from './intro.js';
 import { openSideshow } from './sideshow.js';
 import { maybeOnboard } from './onboarding.js';
+import { getLang, getLangs, getSupportedLangs, setLang, t, tf } from './i18n.js';
+import { speak, stopSpeaking, isSpeaking, clearCache } from './tts.js';
+
+const ELEVENLABS_KEY = import.meta.env.VITE_ELEVENLABS_KEY || '';
 
 const state = {
   band: null,
@@ -183,8 +187,8 @@ function addDataLayers() {
     paint: {
       'circle-color': ['get', 'color'],
       'circle-radius': ['+',
-        ['case', ['==', ['get', 'visited'], true], 9.5, 7.5],
-        ['case', ['boolean', ['feature-state', 'hover'], false], 2.5, 0]],
+        ['case', ['==', ['get', 'visited'], true], 13, 10],
+        ['case', ['boolean', ['feature-state', 'hover'], false], 3, 0]],
       'circle-stroke-width': 2.5,
       'circle-stroke-color': ['case', ['==', ['get', 'visited'], true], '#ffffff', theme.bg],
     },
@@ -255,6 +259,7 @@ function bindMapInteractions() {
       const features = state.places.features.filter((f) => ids.has(f.properties.id));
       openWall(features, state, { onSelect: openSheet, toast });
     } else {
+      pushCamHistory();
       map.easeTo({ center: cluster.geometry.coordinates, zoom: expansionZoom + 0.5, duration: 600 });
     }
   });
@@ -320,8 +325,8 @@ function memoriesHTML(placeId) {
   return `
     <section class="memories">
       <div class="memories-head">
-        <h3>Fan memories${list.length ? ` (${list.length})` : ''}</h3>
-        <button class="btn-mini" id="add-memory-btn">+ ${state.band.gamification.contribution?.label || 'Add a memory'}</button>
+        <h3>${t('fanMemories')}${list.length ? ` (${list.length})` : ''}</h3>
+        <button class="btn-mini" id="add-memory-btn">+ ${state.band.gamification.contribution?.label || t('addMemory')}</button>
       </div>
       ${list.length ? `<div class="memories-list">
         ${list.map((c) => `
@@ -331,7 +336,7 @@ function memoriesHTML(placeId) {
             ${c.mediaUrl ? `<img src="${c.mediaUrl}" alt="" loading="lazy">` : ''}
             ${c.url ? `<a href="${c.url}" target="_blank" rel="noopener">${c.url.replace(/^https?:\/\//, '').slice(0, 44)}…</a>` : ''}
           </article>`).join('')}
-      </div>` : `<p class="memories-empty">Been here? Got a photo, a ticket stub, a story? Be the first to add one.</p>`}
+      </div>` : `<p class="memories-empty">${t('beFirst')}</p>`}
     </section>`;
 }
 
@@ -352,19 +357,22 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
   const isVerified = state.checkins.isVerified(p.id);
   const artist = p.artistId ? state.artists.get(p.artistId) : null;
   const body = $('sheet-body');
+  const heroImg = p.image || p.images?.[0];
+  const ttsAvailable = !!(ELEVENLABS_KEY && state.band.tts?.voiceId);
   body.innerHTML = `
+    ${heroImg ? `<img class="sheet-hero" src="${heroImg}" alt="${tf(p, 'title')}" loading="lazy">` : ''}
     <span class="sheet-cat-bar" style="background:linear-gradient(90deg, ${cat.color}, transparent)"></span>
     <span class="sheet-watermark" style="color:${cat.color}" aria-hidden="true">${p.year}</span>
     <div class="sheet-meta">
       <span class="chip-dot" style="background:${cat.color}"></span>
       <span>${cat.label || ''}</span>
       <span class="sheet-year">${p.year}</span>
-      ${p.approx ? '<span class="sheet-approx">approximate location</span>' : ''}
-      ${isVerified ? '<span class="sheet-approx sheet-verified">📍 verified visit</span>' : ''}
+      ${p.approx ? `<span class="sheet-approx">${t('approxLocation')}</span>` : ''}
+      ${isVerified ? `<span class="sheet-approx sheet-verified">${t('verifiedVisit')}</span>` : ''}
     </div>
-    <h2>${p.title}</h2>
-    <p class="sheet-summary">${p.summary}</p>
-    <p class="sheet-story">${p.story}</p>
+    <h2>${tf(p, 'title') || p.title}</h2>
+    <p class="sheet-summary">${tf(p, 'summary') || p.summary}</p>
+    <p class="sheet-story">${tf(p, 'story') || p.story}</p>
     ${triviaHTML(p)}
     ${artist ? `
       <aside class="artist-card">
@@ -375,14 +383,43 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
     ${memoriesHTML(p.id)}
     <div class="sheet-actions">
       <button class="btn btn-primary" id="checkin-btn">
-        ${visited ? '✓ Visited' : state.band.gamification.checkinLabel}
+        ${visited ? t('visited') : state.band.gamification.checkinLabel}
       </button>
-      <button class="btn" id="share-btn">Share</button>
+      ${ttsAvailable ? `<button class="btn btn-listen" id="listen-btn">${t('listen')}</button>` : ''}
+      <button class="btn" id="share-btn">${t('share')}</button>
     </div>
   `;
   body.querySelector('#checkin-btn').addEventListener('click', () => handleCheckin(feature));
   body.querySelector('#share-btn').addEventListener('click', () => shareFeature(p));
   body.querySelector('#add-memory-btn').addEventListener('click', () => openMemoryForm(feature));
+  const listenBtn = body.querySelector('#listen-btn');
+  if (listenBtn) {
+    listenBtn.addEventListener('click', () => {
+      if (isSpeaking()) {
+        stopSpeaking();
+        listenBtn.textContent = t('listen');
+        return;
+      }
+      listenBtn.textContent = '⏳';
+      listenBtn.disabled = true;
+      const text = [
+        tf(p, 'title') || p.title,
+        tf(p, 'summary') || p.summary,
+        tf(p, 'story') || p.story,
+      ].join('. ');
+      speak({
+        text,
+        apiKey: ELEVENLABS_KEY,
+        voiceId: state.band.tts.voiceId,
+        model: state.band.tts.model,
+        cacheKey: `${state.band.slug}:${p.id}:${getLang()}`,
+        onEnd: () => { listenBtn.textContent = t('listen'); listenBtn.disabled = false; },
+        onError: (msg) => { toast(`TTS: ${msg}`); listenBtn.textContent = t('listen'); listenBtn.disabled = false; },
+      }).then((ok) => {
+        if (ok) { listenBtn.textContent = t('stopAudio'); listenBtn.disabled = false; }
+      });
+    });
+  }
   if (slideDir) {
     body.classList.remove('stop-anim');
     void body.offsetWidth; // restart animation between consecutive stops
@@ -391,6 +428,7 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
   }
   $('sheet').classList.add('sheet-open');
   if (!skipFly) {
+    pushCamHistory();
     state.map.flyTo({
       center: feature.geometry.coordinates,
       zoom: zoomOverride ?? Math.max(state.map.getZoom(), 6),
@@ -854,6 +892,7 @@ function flyToStop(feature, fromCoords) {
   const zoom = d > 4000 ? 5.5 : d > 1500 ? 7 : d > 400 ? 8.4 : 9;
   const curve = d > 1500 ? 1.9 : 1.5; // higher curve = more zoom-out arc
   stopSpin();
+  pushCamHistory();
   state.map.flyTo({
     center: to, zoom, curve, duration,
     padding: { bottom: 260 },
@@ -879,42 +918,43 @@ function openTrips() {
   const current = autoplaySeconds();
   openModal((card, close) => {
     card.innerHTML = `
-      <h2>Take a trip</h2>
-      <p class="modal-text dim">Guided journeys through the story — pick one and sit back.</p>
+      <h2>${t('takeATrip')}</h2>
+      <p class="modal-text dim">${t('tripBlurb')}</p>
       <div class="admin-row">
-        <span>Auto-advance</span>
+        <span>${t('autoAdvance')}</span>
         <select id="trip-auto">
-          ${[[0, "Off — I'll click"], [6, 'Every 6 seconds'], [8, 'Every 8 seconds'],
+          ${[[0, t('autoOff')], [6, 'Every 6 seconds'], [8, 'Every 8 seconds'],
              [12, 'Every 12 seconds'], [20, 'Every 20 seconds']]
             .map(([v, label]) => `<option value="${v}" ${v === current ? 'selected' : ''}>${label}</option>`).join('')}
         </select>
       </div>
       <div class="trip-list">
-        ${state.trips.map((t) => {
-          const stops = tripFeatures(t);
-          const visited = stops.filter((f) => state.checkins.has(f.properties.id)).length;
+        ${state.trips.map((trip) => {
+          const stops = tripFeatures(trip);
+          const visitedCount = stops.filter((f) => state.checkins.has(f.properties.id)).length;
           return `
-            <button class="trip-card" data-id="${t.id}">
-              <span class="trip-emoji">${t.emoji}</span>
+            <button class="trip-card" data-id="${trip.id}">
+              <span class="trip-emoji">${trip.emoji}</span>
               <span class="trip-card-body">
-                <strong>${t.title}</strong>
-                <p>${t.description}</p>
-                <small>${stops.length} stops · ${visited}/${stops.length} visited</small>
+                <strong>${trip.title}</strong>
+                <p>${trip.description}</p>
+                <small>${stops.length} ${t('stops')} · ${visitedCount}/${stops.length} visited</small>
               </span>
             </button>`;
         }).join('')}
       </div>
       ${state.sideshows.length ? `
-        <h2 style="margin-top:20px">Sideshows</h2>
-        <p class="modal-text dim">Not on the map — guided exhibits of gear, artwork and ideas.</p>
+        <h2 style="margin-top:20px">${t('sideshows')}</h2>
+        <p class="modal-text dim">${t('sideshowBlurb')}</p>
         <div class="trip-list">
           ${state.sideshows.map((s) => `
-            <button class="trip-card" data-sideshow="${s.id}">
-              <span class="trip-emoji">${s.emoji}</span>
+            <button class="trip-card trip-card--sideshow" data-sideshow="${s.id}">
+              <span class="trip-emoji sideshow-entry-emoji">${s.emoji}</span>
               <span class="trip-card-body">
+                <span class="sideshow-entry-tag">✦ Exhibit</span>
                 <strong>${s.title}${state.sideshowLog.has(s.id) ? ' ✓' : ''}</strong>
                 <p>${s.description}</p>
-                <small>${s.cards.length} cards</small>
+                <small>${s.cards.length} ${t('cards')}</small>
               </span>
             </button>`).join('')}
         </div>` : ''}`;
@@ -939,7 +979,14 @@ function openTrips() {
 }
 
 function startSideshow(show) {
+  const ttsConfig = state.band.tts && ELEVENLABS_KEY ? {
+    apiKey: ELEVENLABS_KEY,
+    voiceId: state.band.tts.voiceId,
+    model: state.band.tts.model,
+    bandSlug: state.band.slug,
+  } : null;
   openSideshow(show, {
+    ttsConfig,
     onComplete: (def) => {
       const before = snapshotProgress();
       state.sideshowLog.markDone(def.id);
@@ -951,6 +998,18 @@ function startSideshow(show) {
       updateProgress();
     },
   });
+}
+
+// Camera history — push before any intentional flyTo so the back button works.
+const _camHistory = [];
+function pushCamHistory() {
+  const map = state.map;
+  if (!map) return;
+  _camHistory.push({ center: map.getCenter(), zoom: map.getZoom() });
+  if (_camHistory.length > 20) _camHistory.shift();
+}
+function popCamHistory() {
+  return _camHistory.pop() ?? null;
 }
 
 class HomeControl {
@@ -965,6 +1024,26 @@ class HomeControl {
     btn.textContent = '⌂';
     btn.className = 'home-ctrl';
     btn.addEventListener('click', this._onClick);
+    this._container.appendChild(btn);
+    return this._container;
+  }
+  onRemove() { this._container.remove(); }
+}
+
+class BackControl {
+  onAdd() {
+    this._container = document.createElement('div');
+    this._container.className = 'maplibregl-ctrl maplibregl-ctrl-group';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.title = 'Previous view';
+    btn.setAttribute('aria-label', 'Go back to previous zoom');
+    btn.textContent = '←';
+    btn.className = 'home-ctrl';
+    btn.addEventListener('click', () => {
+      const prev = popCamHistory();
+      if (prev) state.map.easeTo({ ...prev, duration: 600 });
+    });
     this._container.appendChild(btn);
     return this._container;
   }
@@ -1112,6 +1191,7 @@ function openMemoryForm(feature) {
 }
 
 function closeSheet() {
+  stopSpeaking();
   $('sheet').classList.remove('sheet-open');
   state.selectedId = null;
 }
@@ -1221,12 +1301,12 @@ function pickTrivia(p) {
   return null;
 }
 function triviaHTML(p) {
-  const t = pickTrivia(p);
-  if (!t) return '';
-  const label = t.level === 'devotee' ? 'Deep cut' : 'Did you know?';
+  const trivia = pickTrivia(p);
+  if (!trivia) return '';
+  const label = trivia.level === 'devotee' ? t('deepCut') : t('didYouKnow');
   return `<aside class="sheet-trivia">
-    <span class="trivia-label">💡 ${label}</span>
-    <p>${t.text}</p>
+    <span class="trivia-label">${label}</span>
+    <p>${trivia.text}</p>
   </aside>`;
 }
 
@@ -1304,6 +1384,7 @@ async function init() {
   state.map = map;
   map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
   map.addControl(new maplibregl.GeolocateControl({ trackUserLocation: true }), 'bottom-right');
+  map.addControl(new BackControl(), 'bottom-right');
   map.addControl(new HomeControl(() => {
     if (state.trip) exitTrip();
     closeSheet();
@@ -1327,6 +1408,7 @@ async function init() {
   map.on('style.load', () => {
     map.setProjection({ type: 'globe' });
     addDataLayers();
+    applyMapLanguage(getLang());
     if (state.trip) { drawTripLine(state.trip.def); setTripHere(tripHereCoords); startTripDash(); } // survive mode toggles
     // Kick off the idle spin once, as soon as the style+layers are ready
     // (more reliable than waiting on 'load', which can stall on slow tiles).
@@ -1341,6 +1423,7 @@ async function init() {
   $('account-btn').addEventListener('click', openAccount);
   $('mode-btn').addEventListener('click', () =>
     setMode(state.mode === 'dark' ? 'light' : 'dark'));
+  $('lang-btn').addEventListener('click', () => openLangPicker());
   $('trips-btn').addEventListener('click', openTrips);
   $('trip-prev').addEventListener('click', () => goToStop(state.trip.index - 1));
   $('trip-next').addEventListener('click', () => goToStop(state.trip.index + 1));
@@ -1359,6 +1442,56 @@ async function init() {
     const feature = places.features.find((f) => f.properties.id === hashId);
     if (feature) map.once('load', () => openSheet(feature));
   }
+}
+
+/* ---------- Language picker ---------- */
+
+const OUR_LAYERS = new Set(['cluster-count', 'points-visited']);
+
+function applyMapLanguage(lang) {
+  const map = state.map;
+  if (!map) return;
+  map.getStyle()?.layers.forEach((layer) => {
+    if (layer.type === 'symbol' && layer.layout?.['text-field'] && !OUR_LAYERS.has(layer.id)) {
+      map.setLayoutProperty(layer.id, 'text-field',
+        ['coalesce', ['get', `name:${lang}`], ['get', 'name']]);
+    }
+  });
+}
+
+function openLangPicker() {
+  const allowed = (state.band.languages || getSupportedLangs()).filter(
+    (l) => getLangs()[l],
+  );
+  if (allowed.length <= 1) return;
+  const cur = getLang();
+  openModal((card, close) => {
+    card.innerHTML = `
+      <h2>🌐 Language</h2>
+      <p class="modal-text dim">Choose your language for the UI and audio narration.</p>
+      <div class="lang-grid">
+        ${allowed.map((l) => {
+          const info = getLangs()[l];
+          return `<button class="lang-opt ${l === cur ? 'lang-opt--on' : ''}" data-lang="${l}">
+            <span class="lang-flag">${info.flag}</span>
+            <span>${info.name}</span>
+          </button>`;
+        }).join('')}
+      </div>`;
+    for (const btn of card.querySelectorAll('.lang-opt')) {
+      btn.addEventListener('click', () => {
+        setLang(btn.dataset.lang, state.band.languages);
+        applyMapLanguage(getLang());
+        close();
+        // Refresh open sheet to re-render translated labels
+        if (state.selectedId) {
+          const f = featureById(state.selectedId);
+          if (f) openSheet(f, null, 0, true);
+        }
+        toast(`${getLangs()[getLang()].flag} ${getLangs()[getLang()].name}`);
+      });
+    }
+  });
 }
 
 window.__wite = state; // debug handle

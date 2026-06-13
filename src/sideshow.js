@@ -2,15 +2,19 @@
 // things that aren't on the map (gear, artwork, themes). Same lean-back spirit
 // as a trip, but it takes over the screen instead of moving the globe.
 
+import { t, getLang } from './i18n.js';
+import { speak, stopSpeaking, isSpeaking } from './tts.js';
+
 let active = null;
 
-export function openSideshow(def, { onComplete } = {}) {
+export function openSideshow(def, { onComplete, ttsConfig } = {}) {
   const root = document.getElementById('sideshow');
   let index = 0;
   let completed = false;
 
   const render = () => {
     const card = def.cards[index];
+    const hasTts = !!(ttsConfig?.apiKey && ttsConfig?.voiceId);
     root.innerHTML = `
       <div class="sideshow-inner">
         <header class="sideshow-head">
@@ -25,9 +29,11 @@ export function openSideshow(def, { onComplete } = {}) {
           ${def.cards.map((_, i) => `<span class="${i <= index ? 'on' : ''}"></span>`).join('')}
         </div>
         <div class="sideshow-card" id="sideshow-card" style="--dir:${0}">
+          ${card.image ? `<img class="sideshow-card-img" src="${card.image}" alt="${card.title}" loading="lazy">` : ''}
           <span class="sideshow-card-sub">${card.subtitle || ''}</span>
           <h3>${card.title}</h3>
           <p>${card.body}</p>
+          ${hasTts ? `<button class="btn-listen-sm" id="ss-listen">${t('listen')}</button>` : ''}
         </div>
         <div class="sideshow-nav">
           <button class="trip-nav" id="ss-prev" aria-label="Previous" ${index === 0 ? 'disabled' : ''}>‹</button>
@@ -35,12 +41,39 @@ export function openSideshow(def, { onComplete } = {}) {
             ${index === def.cards.length - 1 ? 'Finish' : 'Next'}</button>
         </div>
       </div>`;
+
     root.querySelector('.sideshow-close').addEventListener('click', close);
     root.querySelector('#ss-prev').addEventListener('click', () => go(-1));
-    root.querySelector('#ss-next').addEventListener('click', () => go(1));
+    root.querySelector('#ss-next').addEventListener('click', () => { stopSpeaking(); go(1); });
+
+    const listenBtn = root.querySelector('#ss-listen');
+    if (listenBtn) {
+      listenBtn.addEventListener('click', () => {
+        if (isSpeaking()) {
+          stopSpeaking();
+          listenBtn.textContent = t('listen');
+          return;
+        }
+        listenBtn.textContent = '⏳';
+        listenBtn.disabled = true;
+        const text = [card.subtitle, card.title, card.body].filter(Boolean).join('. ');
+        speak({
+          text,
+          apiKey: ttsConfig.apiKey,
+          voiceId: ttsConfig.voiceId,
+          model: ttsConfig.model,
+          cacheKey: `${ttsConfig.bandSlug}:sideshow:${def.id}:${index}:${getLang()}`,
+          onEnd: () => { listenBtn.textContent = t('listen'); listenBtn.disabled = false; },
+          onError: () => { listenBtn.textContent = t('listen'); listenBtn.disabled = false; },
+        }).then((ok) => {
+          if (ok) { listenBtn.textContent = t('stopAudio'); listenBtn.disabled = false; }
+        });
+      });
+    }
   };
 
   const go = (delta) => {
+    stopSpeaking();
     const next = index + delta;
     if (next < 0) return;
     if (next >= def.cards.length) { finish(); return; }
@@ -73,6 +106,7 @@ export function openSideshow(def, { onComplete } = {}) {
   };
 
   function close() {
+    stopSpeaking();
     root.classList.remove('sideshow-open');
     document.removeEventListener('keydown', onKey);
     root.removeEventListener('pointerdown', onDown);

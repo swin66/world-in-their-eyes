@@ -430,16 +430,17 @@ html, body, #app {
   gap: 8px;
 }
 .account-btn {
-  width: 36px; height: 36px;
+  width: 42px; height: 42px;
   border-radius: 50%;
   border: 1px solid var(--line);
   background: var(--glass);
   backdrop-filter: blur(12px);
   color: var(--text);
-  font-size: 15px;
+  font-size: 19px;
   font-weight: 700;
   cursor: pointer;
 }
+.account-btn--search { font-size: 22px; }
 
 /* ---------- Modal (auth + passport) ---------- */
 .modal {
@@ -982,7 +983,26 @@ html, body, #app {
 }
 .trip-card:hover { border-color: var(--accent2); }
 .trip-card:active { transform: scale(.98); }
-.trip-emoji { font-size: 22px; }
+.trip-emoji { font-size: 28px; line-height: 1; }
+
+/* Sideshow cards in the trips modal — visually distinct from trip cards */
+.trip-card--sideshow {
+  border-color: color-mix(in srgb, var(--accent2) 50%, transparent);
+  border-left: 3px solid var(--accent2);
+  background: color-mix(in srgb, var(--accent2) 6%, transparent);
+}
+.trip-card--sideshow:hover { border-color: var(--accent2); }
+.sideshow-entry-emoji { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent2) 60%, transparent)); }
+.sideshow-entry-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 3px;
+}
+
 .trip-card-body strong {
   font-family: 'Space Grotesk', sans-serif;
   font-size: 15px;
@@ -1319,13 +1339,91 @@ html, body, #app {
 
 /* MapLibre tweaks */
 .maplibregl-ctrl-bottom-right { bottom: 74px; }
+.maplibregl-ctrl-bottom-left { bottom: 0; padding-bottom: 4px; }
 .maplibregl-ctrl-attrib {
-  background: color-mix(in srgb, var(--bg) 70%, transparent) !important;
-  color: color-mix(in srgb, var(--text) 65%, transparent);
+  background: color-mix(in srgb, var(--bg) 60%, transparent) !important;
+  color: color-mix(in srgb, var(--text) 50%, transparent);
+  font-size: 10px !important;
+  padding: 2px 6px !important;
+  border-radius: 6px 0 0 0 !important;
 }
-.maplibregl-ctrl-attrib a { color: color-mix(in srgb, var(--text) 75%, transparent); }
+.maplibregl-ctrl-attrib a { color: color-mix(in srgb, var(--text) 55%, transparent); }
+.maplibregl-ctrl-logo { display: none !important; }
 .maplibregl-ctrl-group {
   background: var(--glass) !important;
   border: 1px solid var(--line);
 }
 [data-mode='dark'] .maplibregl-ctrl-group button .maplibregl-ctrl-icon { filter: invert(1); }
+
+/* ---------- Sheet hero image ---------- */
+.sheet-hero {
+  width: calc(100% + 32px);
+  margin: -16px -16px 16px;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+/* ---------- Listen / TTS button ---------- */
+.btn-listen {
+  background: color-mix(in srgb, var(--accent2) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent2) 45%, transparent);
+  color: var(--text);
+}
+.btn-listen:hover { background: color-mix(in srgb, var(--accent2) 22%, transparent); }
+
+/* Small listen button inside sideshow cards */
+.btn-listen-sm {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--accent2) 45%, transparent);
+  background: color-mix(in srgb, var(--accent2) 10%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-listen-sm:hover { background: color-mix(in srgb, var(--accent2) 20%, transparent); }
+.btn-listen-sm:disabled { opacity: .55; cursor: default; }
+
+/* ---------- Sideshow card image ---------- */
+.sideshow-card-img {
+  width: calc(100% + 44px);
+  margin: -22px -22px 18px;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+  border-radius: 17px 17px 0 0;
+}
+
+/* ---------- Language picker ---------- */
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+.lang-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  color: var(--text);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.lang-opt:hover { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 10%, transparent); }
+.lang-opt--on { border-color: var(--accent2); background: color-mix(in srgb, var(--accent2) 18%, transparent); font-weight: 600; }
+.lang-flag { font-size: 26px; }
