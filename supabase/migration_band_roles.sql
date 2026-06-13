@@ -1,26 +1,20 @@
 -- Migration: per-band roles (band_rep / mod) and band-rep applications.
--- Run in Supabase SQL Editor after schema.sql is already applied.
--- The existing profiles.role ('admin'|'editor'|'fan') is unchanged:
---   admin  = platform superadmin (can approve band reps, manage everything)
---   editor = legacy content editor
---   fan    = default signed-in user
---
--- New per-band roles are stored in band_roles (not in profiles):
---   band_rep  = owns/manages a specific band atlas
---   mod       = moderates content for a specific band
+-- Fully self-contained — safe to run even if schema.sql was never applied.
+-- Safe to re-run: uses CREATE IF NOT EXISTS and DROP … IF EXISTS for policies.
 
--- ─── profiles (create if schema.sql wasn't run first) ─────────────────────────
+-- ─── profiles (create if missing) ─────────────────────────────────────────────
 create table if not exists public.profiles (
-  id      uuid primary key references auth.users(id) on delete cascade,
-  role    text not null default 'fan' check (role in ('admin','editor','fan')),
+  id           uuid primary key references auth.users(id) on delete cascade,
+  role         text not null default 'fan' check (role in ('admin','editor','fan')),
   display_name text,
   created_at   timestamptz not null default now()
 );
 alter table public.profiles enable row level security;
-create policy if not exists "own profile read" on public.profiles
+drop policy if exists "own profile read" on public.profiles;
+create policy "own profile read" on public.profiles
   for select using (auth.uid() = id);
 
--- Auto-create profile on signup (idempotent)
+-- Auto-create profile row on signup (idempotent)
 create or replace function public.handle_new_user() returns trigger
 language plpgsql security definer set search_path = public as $$
 begin
@@ -32,8 +26,7 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
 
--- ─── app_role() helper (idempotent — safe to run even if already defined) ──────
--- Returns the current user's platform role from profiles, or 'fan' as default.
+-- ─── app_role() helper ─────────────────────────────────────────────────────────
 create or replace function public.app_role() returns text
 language sql stable security definer set search_path = public as $$
   select coalesce(
@@ -44,25 +37,25 @@ $$;
 
 -- ─── band_roles ────────────────────────────────────────────────────────────────
 create table if not exists public.band_roles (
-  user_id     uuid not null references auth.users(id) on delete cascade,
-  band_slug   text not null,
-  role        text not null check (role in ('band_rep','mod')),
-  granted_by  uuid references auth.users(id),
-  granted_at  timestamptz not null default now(),
+  user_id    uuid not null references auth.users(id) on delete cascade,
+  band_slug  text not null,
+  role       text not null check (role in ('band_rep','mod')),
+  granted_by uuid references auth.users(id),
+  granted_at timestamptz not null default now(),
   primary key (user_id, band_slug)
 );
-
 alter table public.band_roles enable row level security;
 
--- Anyone can read who has what role (used to show rep badge in UI).
+drop policy if exists "public read band roles" on public.band_roles;
 create policy "public read band roles"
   on public.band_roles for select using (true);
 
--- Only platform admins can grant/revoke band_rep; band_reps can grant/revoke mod.
+drop policy if exists "admin manages all band roles" on public.band_roles;
 create policy "admin manages all band roles"
   on public.band_roles for all
   using (public.app_role() = 'admin');
 
+drop policy if exists "band_rep manages mods" on public.band_roles;
 create policy "band_rep manages mods"
   on public.band_roles for all
   using (
@@ -76,12 +69,10 @@ create policy "band_rep manages mods"
   );
 
 -- ─── band_rep_applications ─────────────────────────────────────────────────────
--- Users who want to become band rep submit a justification.
--- Platform admins review and approve/reject.
 create table if not exists public.band_rep_applications (
   id            uuid primary key default gen_random_uuid(),
   user_id       uuid not null references auth.users(id) on delete cascade,
-  band_slug     text not null references public.bands(slug) on delete cascade,
+  band_slug     text not null,
   justification text not null,
   status        text not null default 'pending'
                 check (status in ('pending','approved','rejected')),
@@ -90,33 +81,31 @@ create table if not exists public.band_rep_applications (
   created_at    timestamptz not null default now(),
   unique (user_id, band_slug)
 );
-
 alter table public.band_rep_applications enable row level security;
 
+drop policy if exists "users submit own application" on public.band_rep_applications;
 create policy "users submit own application"
   on public.band_rep_applications for insert
   with check (auth.uid() = user_id);
 
+drop policy if exists "users read own application" on public.band_rep_applications;
 create policy "users read own application"
   on public.band_rep_applications for select
   using (auth.uid() = user_id);
 
+drop policy if exists "admins manage all applications" on public.band_rep_applications;
 create policy "admins manage all applications"
   on public.band_rep_applications for all
   using (public.app_role() = 'admin');
 
--- ─── How to approve a band rep ─────────────────────────────────────────────────
--- 1. User applies via the app (band_rep_applications row created).
--- 2. Admin reviews in the app's admin panel, clicks Approve.
---    The app calls roles.js reviewApplication(), which:
---      a. Sets band_rep_applications.status = 'approved'
---      b. Upserts a band_roles row with role = 'band_rep'
+-- ─── Done ──────────────────────────────────────────────────────────────────────
+-- Promote yourself to admin after signing in once:
+--   UPDATE public.profiles SET role = 'admin'
+--   WHERE id = (SELECT id FROM auth.users WHERE email = 'you@example.com');
 --
--- To promote someone directly (bypass the application flow):
---   insert into public.band_roles (user_id, band_slug, role, granted_by)
---   values (
---     (select id from auth.users where email = 'rep@example.com'),
---     'depeche-mode',
---     'band_rep',
---     (select id from auth.users where email = 'admin@example.com')
+-- To directly grant band rep (skipping the application flow):
+--   INSERT INTO public.band_roles (user_id, band_slug, role)
+--   VALUES (
+--     (SELECT id FROM auth.users WHERE email = 'rep@example.com'),
+--     'depeche-mode', 'band_rep'
 --   );
