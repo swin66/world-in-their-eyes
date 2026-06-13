@@ -412,19 +412,76 @@ function renderModerationTab(body, state, { toast }, role) {
 }
 
 function renderImportTab(body, state, { toast }, role) {
+  const LS_SFM = 'wite:import:setlistfm';
+  let savedSfmKey = localStorage.getItem(LS_SFM) || '';
+  let importSource = 'releases';
+
+  const renderSource = () => {
+    body.querySelector('#import-body').innerHTML = '';
+    if (importSource === 'releases') renderReleasesImport(body.querySelector('#import-body'), state, toast, role);
+    else renderConcertsImport(body.querySelector('#import-body'), state, toast, role, savedSfmKey, (k) => {
+      savedSfmKey = k;
+      localStorage.setItem(LS_SFM, k);
+    });
+  };
+
   body.innerHTML = `
-    <p class="modal-text dim">Pull existing data about any artist from free, open sources.
-    Imported items arrive as drafts at the band's home location, flagged approximate,
-    ready for you to refine.</p>
-    <div class="admin-row">
-      <input type="text" id="mb-artist" placeholder="Artist name (e.g. Depeche Mode)" value="${state.band.name}">
-      <button class="btn" id="mb-search" style="flex:0 0 auto">Find releases</button>
+    <p class="modal-text dim">Pull data from free public sources — imports arrive as draft
+    places flagged <em>approximate</em>, ready for you to refine on the map.</p>
+    <div class="admin-tabs" style="margin-bottom:12px">
+      <button class="admin-tab admin-tab-active" data-src="releases">🎵 Albums</button>
+      <button class="admin-tab" data-src="concerts">🎤 Concert venues</button>
     </div>
-    <div id="mb-results"></div>
-    <p class="modal-text dim">More importers (run locally, free keys):
-    <strong>npm run import:setlistfm</strong> — every concert ever played, grouped by venue
-    (setlist.fm API key) · <strong>npm run enrich</strong> — AI-written stories for imported
-    places via the Claude API.</p>`;
+    <div id="import-body"></div>`;
+
+  for (const btn of body.querySelectorAll('[data-src]')) {
+    btn.addEventListener('click', () => {
+      body.querySelectorAll('[data-src]').forEach((b) => b.classList.remove('admin-tab-active'));
+      btn.classList.add('admin-tab-active');
+      importSource = btn.dataset.src;
+      renderSource();
+    });
+  }
+  renderSource();
+}
+
+async function mbFindArtist(name) {
+  const res = await fetch(
+    `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(name)}&fmt=json&limit=1`,
+    { headers: { 'User-Agent': 'WorldInTheirEyes/1.0 (wite-app)' } },
+  ).then((r) => r.json());
+  return res.artists?.[0] ?? null;
+}
+
+async function persistPlaces(places, bandSlug, supabaseClient, role, download, toast) {
+  if (supabaseClient && (role === 'admin' || role === 'editor')) {
+    const { error } = await supabaseClient.from('places').upsert(
+      places.map((f) => ({
+        id: f.properties.id, band_slug: bandSlug,
+        title: f.properties.title, category: f.properties.category,
+        year: f.properties.year, summary: f.properties.summary,
+        story: f.properties.story,
+        lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1],
+        approx: true,
+      })),
+    );
+    toast(error ? `Import failed: ${error.message}` : `${places.length} draft places saved — reload the map to see them`);
+  } else {
+    download('places-import.json', { type: 'FeatureCollection', features: places });
+    toast(`${places.length} drafts downloaded — merge into places.json and redeploy`);
+  }
+}
+
+function renderReleasesImport(body, state, toast, role) {
+  body.innerHTML = `
+    <p class="modal-text dim">Albums from <strong>MusicBrainz</strong> — free, no key needed.
+    Each release becomes a draft place at the band's home coordinates; move it to the
+    recording studio on the map.</p>
+    <div class="admin-row">
+      <input type="text" id="mb-artist" value="${state.band.name}" placeholder="Artist name">
+      <button class="btn btn-primary" id="mb-search" style="flex:0 0 auto">Search</button>
+    </div>
+    <div id="mb-results"></div>`;
 
   body.querySelector('#mb-search').addEventListener('click', async () => {
     const name = body.querySelector('#mb-artist').value.trim();
@@ -432,57 +489,171 @@ function renderImportTab(body, state, { toast }, role) {
     if (!name) return;
     results.innerHTML = '<p class="modal-text dim">Searching MusicBrainz…</p>';
     try {
-      const search = await fetch(
-        `https://musicbrainz.org/ws/2/artist/?query=${encodeURIComponent(name)}&fmt=json&limit=1`,
-      ).then((r) => r.json());
-      const artist = search.artists?.[0];
-      if (!artist) { results.innerHTML = '<p class="modal-text">No artist found.</p>'; return; }
+      const artist = await mbFindArtist(name);
+      if (!artist) { results.innerHTML = '<p class="modal-text">Artist not found.</p>'; return; }
       const rgs = await fetch(
         `https://musicbrainz.org/ws/2/release-group?artist=${artist.id}&type=album&fmt=json&limit=100`,
+        { headers: { 'User-Agent': 'WorldInTheirEyes/1.0' } },
       ).then((r) => r.json());
       const albums = (rgs['release-groups'] || [])
-        .filter((rg) => rg['primary-type'] === 'Album' && rg['first-release-date'])
+        .filter((a) => a['primary-type'] === 'Album' && a['first-release-date'])
         .sort((a, b) => a['first-release-date'].localeCompare(b['first-release-date']));
-      if (!albums.length) { results.innerHTML = '<p class="modal-text">No releases found.</p>'; return; }
+      if (!albums.length) { results.innerHTML = '<p class="modal-text">No albums found.</p>'; return; }
       results.innerHTML = `
+        <p class="modal-text dim">${albums.length} albums found for <strong>${artist.name}</strong>.
+          <button class="btn-mini" id="mb-all">All</button>
+          <button class="btn-mini" id="mb-none">None</button></p>
         <div class="import-list">
           ${albums.map((a, i) => `
             <label><input type="checkbox" data-i="${i}" checked>
-              ${a.title}<span class="import-year">${a['first-release-date'].slice(0, 4)}</span></label>`).join('')}
+              ${a.title}<span class="import-year">${a['first-release-date'].slice(0, 4)}</span>
+            </label>`).join('')}
         </div>
-        <button class="btn btn-primary" id="mb-generate" style="width:100%">
-          Generate draft places</button>`;
-      results.querySelector('#mb-generate').addEventListener('click', async () => {
-        const chosen = [...results.querySelectorAll('input:checked')]
-          .map((cb) => albums[Number(cb.dataset.i)]);
+        <button class="btn btn-primary" id="mb-import" style="width:100%;margin-top:10px">
+          Import selected as draft places</button>`;
+
+      results.querySelector('#mb-all').addEventListener('click', () =>
+        results.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = true; }));
+      results.querySelector('#mb-none').addEventListener('click', () =>
+        results.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = false; }));
+      results.querySelector('#mb-import').addEventListener('click', async () => {
+        const chosen = [...results.querySelectorAll('input:checked')].map((cb) => albums[+cb.dataset.i]);
+        if (!chosen.length) { toast('Nothing selected'); return; }
         const features = chosen.map((a) => ({
           type: 'Feature',
           geometry: { type: 'Point', coordinates: state.band.map.center },
           properties: {
-            id: `release-${a.id.slice(0, 8)}`,
-            title: a.title,
-            category: 'release',
-            year: Number(a['first-release-date'].slice(0, 4)),
-            approx: true,
-            summary: `Released ${a['first-release-date']}.`,
-            story: `Imported from MusicBrainz — move this marker to where it was recorded and add the story (or run npm run enrich).`,
+            id: `mb-release-${a.id.slice(0, 8)}`,
+            title: a.title, category: 'release',
+            year: +a['first-release-date'].slice(0, 4),
+            summary: `Album released ${a['first-release-date']}.`,
+            story: 'Imported from MusicBrainz. Move this pin to the recording studio and add the story.',
           },
         }));
-        if (supabase && (role === 'admin' || role === 'editor')) {
-          const { error } = await supabase.from('places').upsert(features.map((f) => ({
-            id: f.properties.id, band_slug: state.band.slug, title: f.properties.title,
-            category: 'release', year: f.properties.year, summary: f.properties.summary,
-            story: f.properties.story, lng: f.geometry.coordinates[0],
-            lat: f.geometry.coordinates[1], approx: true,
-          })));
-          toast(error ? `Import failed: ${error.message}` : `${features.length} draft places added — reload to see them`);
-        } else {
-          download('places-import.json', { type: 'FeatureCollection', features });
-          toast(`${features.length} drafts downloaded — merge into places.json`);
-        }
+        await persistPlaces(features, state.band.slug, supabase, role, download, toast);
       });
     } catch (err) {
-      results.innerHTML = `<p class="modal-text">Import failed: ${err.message}</p>`;
+      results.innerHTML = `<p class="modal-text">Error: ${err.message}</p>`;
+    }
+  });
+}
+
+function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
+  body.innerHTML = `
+    <p class="modal-text dim">Concert venues from <strong>Setlist.fm</strong> — free API key,
+    real venue coordinates. Each unique venue becomes one <em>Live</em> place on the map
+    with a count of how many times the band played there.</p>
+    <div class="admin-row">
+      <input type="text" id="sfm-key" placeholder="Setlist.fm API key" value="${savedKey}"
+        style="font-family:monospace;font-size:12px">
+      <a href="https://www.setlist.fm/settings/api" target="_blank" rel="noopener"
+        class="btn" style="flex:0 0 auto;white-space:nowrap">Get free key ↗</a>
+    </div>
+    <div class="admin-row">
+      <input type="text" id="sfm-artist" value="${state.band.name}" placeholder="Artist name">
+      <input type="number" id="sfm-pages" value="5" min="1" max="50" style="flex:0 0 64px" title="Pages to fetch (20 shows each)">
+      <button class="btn btn-primary" id="sfm-search" style="flex:0 0 auto">Search</button>
+    </div>
+    <p class="modal-text dim" style="margin-top:0">Pages × 20 = shows fetched. 5 pages = 100 most recent shows.</p>
+    <div id="sfm-results"></div>`;
+
+  body.querySelector('#sfm-key').addEventListener('change', (e) => saveKey(e.target.value.trim()));
+
+  body.querySelector('#sfm-search').addEventListener('click', async () => {
+    const key = body.querySelector('#sfm-key').value.trim();
+    const artist = body.querySelector('#sfm-artist').value.trim();
+    const pages = Math.min(50, Math.max(1, +body.querySelector('#sfm-pages').value || 5));
+    const results = body.querySelector('#sfm-results');
+    if (!key) { toast('Enter your Setlist.fm API key first'); return; }
+    if (!artist) return;
+    saveKey(key);
+
+    results.innerHTML = '<p class="modal-text dim">Fetching setlists…</p>';
+
+    try {
+      const venueMap = new Map(); // venue.id → { venue, shows: [{date, url}] }
+
+      for (let p = 1; p <= pages; p++) {
+        results.querySelector('p').textContent = `Fetching page ${p} of ${pages}…`;
+        const data = await fetch(
+          `https://api.setlist.fm/rest/1.0/search/setlists?artistName=${encodeURIComponent(artist)}&p=${p}`,
+          { headers: { 'x-api-key': key, 'Accept': 'application/json' } },
+        ).then((r) => {
+          if (r.status === 401) throw new Error('Invalid API key');
+          if (r.status === 404) throw new Error('Artist not found on Setlist.fm');
+          if (!r.ok) throw new Error(`Setlist.fm error ${r.status}`);
+          return r.json();
+        });
+
+        for (const sl of data.setlist || []) {
+          if (!sl.venue?.city?.coords) continue; // skip venues with no coords
+          const vid = sl.venue.id;
+          if (!venueMap.has(vid)) {
+            venueMap.set(vid, { venue: sl.venue, shows: [] });
+          }
+          venueMap.get(vid).shows.push({ date: sl.eventDate, url: sl.url });
+        }
+
+        const total = data.total ?? 0;
+        const maxPage = Math.ceil(total / 20);
+        if (p >= maxPage) break; // no more pages
+      }
+
+      if (!venueMap.size) {
+        results.innerHTML = '<p class="modal-text">No shows with venue coordinates found.</p>';
+        return;
+      }
+
+      const venues = [...venueMap.values()].sort((a, b) => b.shows.length - a.shows.length);
+      results.innerHTML = `
+        <p class="modal-text dim">${venues.length} unique venues found across ${venues.reduce((s, v) => s + v.shows.length, 0)} shows.
+          <button class="btn-mini" id="sfm-all">All</button>
+          <button class="btn-mini" id="sfm-none">None</button></p>
+        <div class="import-list">
+          ${venues.map((v, i) => {
+            const city = v.venue.city;
+            const label = `${v.venue.name}, ${city.name}, ${city.country.name}`;
+            const years = v.shows.map((s) => +s.date.split('-').pop()).sort();
+            const yearRange = years[0] === years[years.length - 1] ? years[0] : `${years[0]}–${years[years.length - 1]}`;
+            return `<label><input type="checkbox" data-i="${i}" checked>
+              ${label}
+              <span class="import-year">${v.shows.length} show${v.shows.length > 1 ? 's' : ''} · ${yearRange}</span>
+            </label>`;
+          }).join('')}
+        </div>
+        <button class="btn btn-primary" id="sfm-import" style="width:100%;margin-top:10px">
+          Import selected venues as places</button>`;
+
+      results.querySelector('#sfm-all').addEventListener('click', () =>
+        results.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = true; }));
+      results.querySelector('#sfm-none').addEventListener('click', () =>
+        results.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = false; }));
+
+      results.querySelector('#sfm-import').addEventListener('click', async () => {
+        const chosen = [...results.querySelectorAll('input:checked')].map((cb) => venues[+cb.dataset.i]);
+        if (!chosen.length) { toast('Nothing selected'); return; }
+        const features = chosen.map((v) => {
+          const city = v.venue.city;
+          const years = v.shows.map((s) => +s.date.split('-').pop()).sort();
+          const firstYear = years[0];
+          const shows = v.shows.length;
+          return {
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [+city.coords.long, +city.coords.lat] },
+            properties: {
+              id: `sfm-venue-${v.venue.id}`,
+              title: `${v.venue.name}, ${city.name}`,
+              category: 'gig',
+              year: firstYear,
+              summary: `${shows} show${shows > 1 ? 's' : ''} at this venue · ${city.name}, ${city.country.name}`,
+              story: `Played here ${shows} time${shows > 1 ? 's' : ''}. Setlist.fm: ${v.shows[0].url}`,
+            },
+          };
+        });
+        await persistPlaces(features, state.band.slug, supabase, role, download, toast);
+      });
+    } catch (err) {
+      results.innerHTML = `<p class="modal-text">Error: ${err.message}</p>`;
     }
   });
 }
