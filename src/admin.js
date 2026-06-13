@@ -551,10 +551,10 @@ function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
     </div>
     <div class="admin-row">
       <input type="text" id="sfm-artist" value="${state.band.name}" placeholder="Artist name">
-      <input type="number" id="sfm-pages" value="5" min="1" max="50" style="flex:0 0 64px" title="Pages to fetch (20 shows each)">
+      <input type="number" id="sfm-pages" value="3" min="1" max="50" style="flex:0 0 64px" title="Pages to fetch (20 shows each)">
       <button class="btn btn-primary" id="sfm-search" style="flex:0 0 auto">Search</button>
     </div>
-    <p class="modal-text dim" style="margin-top:0">Pages × 20 = shows fetched. 5 pages = 100 most recent shows.</p>
+    <p class="modal-text dim" style="margin-top:0">Pages × 20 = shows fetched. Start with 3 (60 shows) — add more once it's working.</p>
     <div id="sfm-results"></div>`;
 
   body.querySelector('#sfm-key').addEventListener('change', (e) => saveKey(e.target.value.trim()));
@@ -574,18 +574,24 @@ function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
       const venueMap = new Map(); // venue.id → { venue, shows: [{date, url}] }
 
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+      const sfmFetch = async (p, attempt = 1) => {
+        const r = await fetch(`/api/setlistfm?artist=${encodeURIComponent(artist)}&p=${p}`, { headers: { 'x-sfm-key': key } });
+        if (r.status === 429 && attempt <= 3) {
+          const wait = attempt * 3000;
+          results.querySelector('p').textContent = `Rate limited — waiting ${wait / 1000}s then retrying…`;
+          await sleep(wait);
+          return sfmFetch(p, attempt + 1);
+        }
+        if (r.status === 401) throw new Error('Invalid API key');
+        if (r.status === 404) throw new Error('Artist not found on Setlist.fm');
+        if (!r.ok) throw new Error(`Setlist.fm error ${r.status}`);
+        return r.json();
+      };
+
       for (let p = 1; p <= pages; p++) {
         results.querySelector('p').textContent = `Fetching page ${p} of ${pages}…`;
-        if (p > 1) await sleep(1200); // stay under Setlist.fm's 1 req/s free limit
-        const data = await fetch(
-          `/api/setlistfm?artist=${encodeURIComponent(artist)}&p=${p}`,
-          { headers: { 'x-sfm-key': key } },
-        ).then((r) => {
-          if (r.status === 401) throw new Error('Invalid API key');
-          if (r.status === 404) throw new Error('Artist not found on Setlist.fm');
-          if (!r.ok) throw new Error(`Setlist.fm error ${r.status}`);
-          return r.json();
-        });
+        if (p > 1) await sleep(2500);
+        const data = await sfmFetch(p);
 
         for (const sl of data.setlist || []) {
           if (!sl.venue?.city?.coords) continue; // skip venues with no coords
