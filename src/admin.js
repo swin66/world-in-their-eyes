@@ -576,14 +576,15 @@ function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const sfmFetch = async (p) => {
         const r = await fetch(`/api/setlistfm?artist=${encodeURIComponent(artist)}&p=${p}`, { headers: { 'x-sfm-key': key } });
-        if (r.status === 429) throw new Error('Rate limited (429). Wait 60 seconds then try again — start with 1 page to confirm your key is working.');
-        if (r.status === 401) throw new Error('Invalid API key — check it at setlist.fm/settings/api');
-        if (r.status === 404) throw new Error('Artist not found on Setlist.fm');
+        let payload;
+        try { payload = await r.json(); } catch { payload = null; }
         if (!r.ok) {
-          const body = await r.text().catch(() => '');
-          throw new Error(`Setlist.fm error ${r.status}${body ? ': ' + body.slice(0, 120) : ''}`);
+          const detail = payload?.error || payload?.raw || JSON.stringify(payload || '').slice(0, 200);
+          const debugInfo = payload?.debug ? `\n\nDebug: ${JSON.stringify(payload.debug, null, 2)}` : '';
+          const label = r.status === 429 ? 'Rate limited (429)' : r.status === 401 ? 'Invalid API key (401)' : r.status === 404 ? 'Artist not found (404)' : `Error ${r.status}`;
+          throw new Error(`${label}: ${detail}${debugInfo}`);
         }
-        return r.json();
+        return payload;
       };
 
       for (let p = 1; p <= pages; p++) {
@@ -659,7 +660,8 @@ function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
         await persistPlaces(features, state.band.slug, supabase, role, download, toast);
       });
     } catch (err) {
-      results.innerHTML = `<p class="modal-text">Error: ${err.message}</p>`;
+      const [headline, ...rest] = err.message.split('\n\nDebug:');
+      results.innerHTML = `<p class="modal-text" style="color:var(--error,#f66)">Error: ${headline}</p>${rest.length ? `<pre style="font-size:10px;overflow:auto;max-height:200px;background:var(--surface);padding:8px;border-radius:6px;color:var(--text)">${rest.join('')}</pre>` : ''}`;
     }
   });
 }
