@@ -576,8 +576,8 @@ function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
       for (let p = 1; p <= pages; p++) {
         results.querySelector('p').textContent = `Fetching page ${p} of ${pages}…`;
         const data = await fetch(
-          `https://api.setlist.fm/rest/1.0/search/setlists?artistName=${encodeURIComponent(artist)}&p=${p}`,
-          { headers: { 'x-api-key': key, 'Accept': 'application/json' } },
+          `/api/setlistfm?artist=${encodeURIComponent(artist)}&p=${p}`,
+          { headers: { 'x-sfm-key': key } },
         ).then((r) => {
           if (r.status === 401) throw new Error('Invalid API key');
           if (r.status === 404) throw new Error('Artist not found on Setlist.fm');
