@@ -14,6 +14,7 @@ import { openSideshow } from './sideshow.js';
 import { maybeOnboard } from './onboarding.js';
 import { getLang, getLangs, getSupportedLangs, setLang, t, tf } from './i18n.js';
 import { speak, stopSpeaking, isSpeaking, clearCache, getVoiceForLang, setVoiceForLang, getAutoplay, setAutoplay, fetchVoices } from './tts.js';
+import { initGalaxy } from './galaxy.js';
 
 const ELEVENLABS_KEY = import.meta.env.VITE_ELEVENLABS_KEY || '';
 
@@ -1052,11 +1053,11 @@ class BackControl {
     btn.type = 'button';
     btn.title = 'Previous view';
     btn.setAttribute('aria-label', 'Go back to previous zoom');
-    btn.textContent = '←';
+    btn.textContent = '↺';
     btn.className = 'home-ctrl';
     btn.addEventListener('click', () => {
       const prev = popCamHistory();
-      if (prev) state.map.easeTo({ ...prev, duration: 600 });
+      if (prev) state.map.easeTo({ ...prev, duration: 600, padding: { top: 0, bottom: 0, left: 0, right: 0 } });
     });
     this._container.appendChild(btn);
     return this._container;
@@ -1378,6 +1379,7 @@ async function init() {
   state.mode = localStorage.getItem(`wite:${band.slug}:mode`) || band.defaultMode || 'dark';
 
   applyTheme(band, state.mode);
+  initGalaxy();
   const introWillPlay = !sessionStorage.getItem('wite:intro-played');
   playIntro(band); // runs over the top while the map loads beneath
   setTimeout(() => maybeOnboard(band), introWillPlay ? 4400 : 1200);
@@ -1404,7 +1406,7 @@ async function init() {
     closeSheet();
     closeWall();
     spinning = true; // resume the idle globe after the flight home
-    map.flyTo({ ...startView, duration: 1600 });
+    map.flyTo({ ...startView, duration: 1600, padding: { top: 0, bottom: 0, left: 0, right: 0 } });
   }), 'bottom-left');
 
   // The idle globe spins gently until the user takes over.

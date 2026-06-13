@@ -22,7 +22,31 @@ html, body, #app {
   -webkit-font-smoothing: antialiased;
 }
 
-#map { position: absolute; inset: 0; }
+#map { position: absolute; inset: 0; background: transparent; }
+
+/* ---------- Galaxy starfield background ---------- */
+#galaxy-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background: radial-gradient(ellipse 120% 90% at 50% 55%, #0c0518 0%, #05030e 55%, #000008 100%);
+}
+.galaxy-field {
+  position: absolute;
+  /* oversized so perspective tilt doesn't reveal edges */
+  inset: -15% -10%;
+  width: 120%;
+  height: 130%;
+  transform: perspective(750px) rotateX(-20deg);
+  transform-origin: 50% 52%;
+}
+.galaxy-field canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
 
 /* ---------- Top bar ---------- */
 .topbar {
