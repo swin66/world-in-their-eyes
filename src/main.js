@@ -10,12 +10,14 @@ import { initAuth, getUser, syncCheckins, pushCheckin, renderAuthModal } from '.
 import { renderAdmin } from './admin.js';
 import { openWall, closeWall } from './wall.js';
 import { playIntro } from './intro.js';
+import { openSideshow } from './sideshow.js';
 import { maybeOnboard } from './onboarding.js';
 
 const state = {
   band: null,
   places: null,
   trips: [],
+  sideshows: [],
   trip: null, // { def, index } while a guided trip is running
   artists: new Map(),
   activeCategories: new Set(),
@@ -37,15 +39,17 @@ async function loadJSON(url) {
 // Prefer database content when Supabase is configured and seeded;
 // otherwise fall back to the static JSON shipped with the site.
 async function loadData() {
-  const [band, placesJson, artistsJson, tripsJson] = await Promise.all([
+  const [band, placesJson, artistsJson, tripsJson, sideshowsJson] = await Promise.all([
     loadJSON('/data/band.json'),
     loadJSON('/data/places.json'),
     loadJSON('/data/artists.json'),
     loadJSON('/data/trips.json').catch(() => ({ trips: [] })),
+    loadJSON('/data/sideshows.json').catch(() => ({ sideshows: [] })),
   ]);
   let places = placesJson;
   let artists = artistsJson.artists;
   let trips = tripsJson.trips || [];
+  const sideshows = sideshowsJson.sideshows || [];
   if (supabase) {
     const [placesRes, artistsRes, tripsRes] = await Promise.all([
       supabase.from('places').select('*').eq('band_slug', band.slug),
@@ -69,7 +73,7 @@ async function loadData() {
     }
     if (artistsRes.data?.length) artists = artistsRes.data;
   }
-  return { band, places, artists, trips };
+  return { band, places, artists, trips, sideshows };
 }
 
 /* ---------- Theming ---------- */
@@ -339,7 +343,7 @@ function buzz(pattern) {
   try { navigator.vibrate?.(pattern); } catch { /* not supported */ }
 }
 
-function openSheet(feature, zoomOverride, slideDir = 0) {
+function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
   stopSpin();
   const p = feature.properties;
   state.selectedId = p.id;
@@ -361,6 +365,7 @@ function openSheet(feature, zoomOverride, slideDir = 0) {
     <h2>${p.title}</h2>
     <p class="sheet-summary">${p.summary}</p>
     <p class="sheet-story">${p.story}</p>
+    ${triviaHTML(p)}
     ${artist ? `
       <aside class="artist-card">
         <span class="artist-relation">${artist.relation}</span>
@@ -385,12 +390,14 @@ function openSheet(feature, zoomOverride, slideDir = 0) {
     body.classList.add('stop-anim');
   }
   $('sheet').classList.add('sheet-open');
-  state.map.flyTo({
-    center: feature.geometry.coordinates,
-    zoom: zoomOverride ?? Math.max(state.map.getZoom(), 6),
-    padding: { bottom: 260 },
-    duration: zoomOverride ? 1600 : 900,
-  });
+  if (!skipFly) {
+    state.map.flyTo({
+      center: feature.geometry.coordinates,
+      zoom: zoomOverride ?? Math.max(state.map.getZoom(), 6),
+      padding: { bottom: 260 },
+      duration: zoomOverride ? 1600 : 900,
+    });
+  }
 }
 
 /* ---------- Search ---------- */
@@ -594,8 +601,12 @@ function stopPings() {
 
 // Auto-advance: optional hands-free playback with a configurable dwell time.
 let tripTimer = null;
+let tripArriveTimer = null;
 function autoplaySeconds() {
   return Number(localStorage.getItem(`wite:${state.band.slug}:autoplay`) ?? 8);
+}
+function resetCountdown() {
+  $('trip-countdown').classList.remove('trip-countdown-run');
 }
 function scheduleAdvance() {
   clearTimeout(tripTimer);
@@ -812,6 +823,7 @@ function goToStop(index) {
     return;
   }
   const dir = index > trip.index ? 1 : index < trip.index ? -1 : 0;
+  const fromCoords = features[trip.index]?.geometry.coordinates;
   trip.index = Math.max(0, index);
   const feature = features[trip.index];
   $('trip-stop-title').textContent = feature.properties.title;
@@ -819,13 +831,40 @@ function goToStop(index) {
   [...$('trip-progress').children].forEach((seg, i) =>
     seg.classList.toggle('trip-seg-done', i <= trip.index));
   setTripHere(feature.geometry.coordinates);
-  openSheet(feature, 9, dir);
-  syncTripCountdown();
-  scheduleAdvance();
+  openSheet(feature, 9, dir, true); // camera handled by flyToStop below
+  const flightMs = flyToStop(feature, fromCoords);
+  // Hold the countdown + auto-advance until the camera actually arrives, so a
+  // long flight never eats into reading time.
+  clearTimeout(tripArriveTimer);
+  resetCountdown(); // empty the bar while travelling
+  tripArriveTimer = setTimeout(() => {
+    syncTripCountdown();
+    scheduleAdvance();
+  }, flightMs);
+}
+
+// Fly to the next stop with a distance-aware arc: long hops take longer and
+// pull the camera back so you see the leap across the globe, rather than
+// whizzing over blank map.
+function flyToStop(feature, fromCoords) {
+  const to = feature.geometry.coordinates;
+  const d = fromCoords ? haversineKm(fromCoords, to) : 0;
+  const duration = Math.min(4200, Math.max(1100, 800 + d * 0.5));
+  // Pull back for longer hops; very long hops show a near-global view mid-arc.
+  const zoom = d > 4000 ? 5.5 : d > 1500 ? 7 : d > 400 ? 8.4 : 9;
+  const curve = d > 1500 ? 1.9 : 1.5; // higher curve = more zoom-out arc
+  stopSpin();
+  state.map.flyTo({
+    center: to, zoom, curve, duration,
+    padding: { bottom: 260 },
+    essential: true,
+  });
+  return duration;
 }
 
 function exitTrip() {
   clearTimeout(tripTimer);
+  clearTimeout(tripArriveTimer);
   state.trip = null;
   delete document.body.dataset.trip;
   stopTripDash();
@@ -864,17 +903,53 @@ function openTrips() {
               </span>
             </button>`;
         }).join('')}
-      </div>`;
+      </div>
+      ${state.sideshows.length ? `
+        <h2 style="margin-top:20px">Sideshows</h2>
+        <p class="modal-text dim">Not on the map — guided exhibits of gear, artwork and ideas.</p>
+        <div class="trip-list">
+          ${state.sideshows.map((s) => `
+            <button class="trip-card" data-sideshow="${s.id}">
+              <span class="trip-emoji">${s.emoji}</span>
+              <span class="trip-card-body">
+                <strong>${s.title}${state.sideshowLog.has(s.id) ? ' ✓' : ''}</strong>
+                <p>${s.description}</p>
+                <small>${s.cards.length} cards</small>
+              </span>
+            </button>`).join('')}
+        </div>` : ''}`;
     card.querySelector('#trip-auto').addEventListener('change', (e) => {
       localStorage.setItem(`wite:${state.band.slug}:autoplay`, e.target.value);
     });
-    for (const btn of card.querySelectorAll('.trip-card')) {
+    for (const btn of card.querySelectorAll('.trip-card[data-id]')) {
       btn.addEventListener('click', () => {
         const trip = state.trips.find((t) => t.id === btn.dataset.id);
         close();
         if (trip) startTrip(trip);
       });
     }
+    for (const btn of card.querySelectorAll('.trip-card[data-sideshow]')) {
+      btn.addEventListener('click', () => {
+        const show = state.sideshows.find((s) => s.id === btn.dataset.sideshow);
+        close();
+        if (show) startSideshow(show);
+      });
+    }
+  });
+}
+
+function startSideshow(show) {
+  openSideshow(show, {
+    onComplete: (def) => {
+      const before = snapshotProgress();
+      state.sideshowLog.markDone(def.id);
+      state.streak.record();
+      const after = snapshotProgress();
+      confetti({ particleCount: 140, spread: 85, origin: { y: 0.6 }, zIndex: 100 });
+      celebrateDiff(before, after, (gained) =>
+        `✦ Sideshow complete: ${def.title}${gained ? ` (+${gained} pts)` : ''}`);
+      updateProgress();
+    },
   });
 }
 
@@ -905,6 +980,8 @@ function progressExtras() {
     streakNow: state.streak.current(),
     completedTrips: state.tripLog.asSet(),
     tripDefs: state.trips,
+    completedSideshows: state.sideshowLog.asSet(),
+    sideshowDefs: state.sideshows,
   };
 }
 
@@ -1102,12 +1179,79 @@ function openPassport() {
 }
 
 function openAccount() {
-  openModal((card, close) => renderAuthModal(card, state.band, {
-    onClose: close,
-    onAdmin: () => openModal((c, cl) => renderAdmin(c, state, {
-      onClose: cl, toast, setMode, refreshData: refreshMapData,
-    })),
-  }));
+  openModal((card, close) => {
+    renderAuthModal(card, state.band, {
+      onClose: close,
+      onAdmin: () => openModal((c, cl) => renderAdmin(c, state, {
+        onClose: cl, toast, setMode, refreshData: refreshMapData,
+      })),
+    });
+    injectFanLevel(card);
+  });
+}
+
+/* ---------- Fan level (profile) + level-tuned trivia ---------- */
+
+function fanLevels() {
+  return state.band.fanLevels || [];
+}
+function getFanLevel() {
+  const ids = fanLevels().map((l) => l.id);
+  const saved = localStorage.getItem(`wite:${state.band.slug}:fanlevel`);
+  return ids.includes(saved) ? saved : (state.band.defaultFanLevel || ids[1] || ids[0]);
+}
+function setFanLevel(id) {
+  localStorage.setItem(`wite:${state.band.slug}:fanlevel`, id);
+  // Refresh the open place card's trivia in place (no camera move).
+  if (state.selectedId) {
+    const f = featureById(state.selectedId);
+    if (f) openSheet(f, null, 0, true);
+  }
+}
+// Pick the trivia line for the user's level, falling back to the nearest
+// lower tier — so a devotee without a devotee-line still sees a fact, but a
+// curious newcomer is never shown the deep-cut spoilers.
+function pickTrivia(p) {
+  if (!p.trivia) return null;
+  const order = fanLevels().map((l) => l.id);
+  const idx = order.indexOf(getFanLevel());
+  for (let i = idx; i >= 0; i--) {
+    if (p.trivia[order[i]]) return { level: order[i], text: p.trivia[order[i]] };
+  }
+  return null;
+}
+function triviaHTML(p) {
+  const t = pickTrivia(p);
+  if (!t) return '';
+  const label = t.level === 'devotee' ? 'Deep cut' : 'Did you know?';
+  return `<aside class="sheet-trivia">
+    <span class="trivia-label">💡 ${label}</span>
+    <p>${t.text}</p>
+  </aside>`;
+}
+
+function injectFanLevel(card) {
+  const levels = fanLevels();
+  if (!levels.length) return;
+  const cur = getFanLevel();
+  const blurb = (id) => `${levels.find((l) => l.id === id)?.blurb || ''} Trivia on each place tunes to your level.`;
+  const wrap = document.createElement('div');
+  wrap.className = 'fanlevel';
+  wrap.innerHTML = `
+    <span class="fanlevel-label">I'm a…</span>
+    <div class="fanlevel-opts">
+      ${levels.map((l) => `<button class="fanlevel-opt ${l.id === cur ? 'on' : ''}" data-level="${l.id}">${l.label}</button>`).join('')}
+    </div>
+    <p class="modal-text dim fanlevel-blurb">${blurb(cur)}</p>`;
+  const h2 = card.querySelector('h2');
+  if (h2) h2.after(wrap); else card.prepend(wrap);
+  for (const btn of wrap.querySelectorAll('.fanlevel-opt')) {
+    btn.addEventListener('click', () => {
+      setFanLevel(btn.dataset.level);
+      wrap.querySelectorAll('.fanlevel-opt').forEach((b) => b.classList.toggle('on', b === btn));
+      wrap.querySelector('.fanlevel-blurb').textContent = blurb(btn.dataset.level);
+    });
+  }
 }
 
 async function onSessionChange(user) {
@@ -1125,14 +1269,16 @@ async function onSessionChange(user) {
 /* ---------- Boot ---------- */
 
 async function init() {
-  const { band, places, artists, trips } = await loadData();
+  const { band, places, artists, trips, sideshows } = await loadData();
   state.band = band;
   state.places = places;
   state.trips = trips;
+  state.sideshows = sideshows;
   state.artists = new Map(artists.map((a) => [a.id, a]));
   state.checkins = createCheckins(band.slug);
   state.streak = createStreak(band.slug);
   state.tripLog = createTripLog(band.slug);
+  state.sideshowLog = createTripLog(`${band.slug}:sideshow`);
   state.contributions = createContributions(band.slug);
   state.contributions.loadRemote(places.features.map((f) => f.properties.id)).catch(() => {});
   state.mode = localStorage.getItem(`wite:${band.slug}:mode`) || band.defaultMode || 'dark';

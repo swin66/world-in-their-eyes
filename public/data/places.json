@@ -3,7 +3,13 @@
   "features": [
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.2229, 51.4927] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.2229,
+          51.4927
+        ]
+      },
       "properties": {
         "id": "alan-wilder-born",
         "title": "Hammersmith, London",
@@ -15,7 +21,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [0.027, 51.5917] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.027,
+          51.5917
+        ]
+      },
       "properties": {
         "id": "vince-clarke-born",
         "title": "South Woodford, London",
@@ -27,7 +39,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [0.1313, 51.5541] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.1313,
+          51.5541
+        ]
+      },
       "properties": {
         "id": "martin-gore-born",
         "title": "Dagenham, London",
@@ -39,7 +57,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-1.1505, 52.9536] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -1.1505,
+          52.9536
+        ]
+      },
       "properties": {
         "id": "andy-fletcher-born",
         "title": "Nottingham",
@@ -51,7 +75,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [0.11, 51.699] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.11,
+          51.699
+        ]
+      },
       "properties": {
         "id": "dave-gahan-born",
         "title": "Epping, Essex",
@@ -63,19 +93,36 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [0.4889, 51.5762] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.4889,
+          51.5762
+        ]
+      },
       "properties": {
         "id": "basildon",
         "title": "Basildon, Essex",
         "category": "origins",
         "year": 1980,
         "summary": "Where it all began.",
-        "story": "The Essex new town where Dave Gahan, Martin Gore, Andy Fletcher and Vince Clarke grew up and formed the band in 1980. The town's pedestrian underpasses and brutalist architecture have become pilgrimage sites for fans from around the world."
+        "story": "The Essex new town where Dave Gahan, Martin Gore, Andy Fletcher and Vince Clarke grew up and formed the band in 1980. The town's pedestrian underpasses and brutalist architecture have become pilgrimage sites for fans from around the world.",
+        "trivia": {
+          "curious": "Basildon is a post-war 'new town' built to rehouse bombed-out Londoners.",
+          "fan": "They tried the name 'Composition of Sound' before Dave Gahan suggested Depeche Mode.",
+          "devotee": "Devotees still seek out the brutalist pedestrian underpasses Anton Corbijn would later echo in the band's imagery."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [0.4727, 51.5895] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.4727,
+          51.5895
+        ]
+      },
       "properties": {
         "id": "first-gig",
         "title": "St Nicholas School, Basildon",
@@ -88,7 +135,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [0.0142, 51.5142] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.0142,
+          51.5142
+        ]
+      },
       "properties": {
         "id": "bridge-house",
         "title": "The Bridge House, Canning Town",
@@ -100,7 +153,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.2199, 51.5273] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.2199,
+          51.5273
+        ]
+      },
       "properties": {
         "id": "mute",
         "title": "Mute Records, London",
@@ -113,19 +172,36 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1036,
+          51.4983
+        ]
+      },
       "properties": {
         "id": "blackwing",
         "title": "Blackwing Studios, Southwark",
         "category": "studio",
         "year": 1981,
         "summary": "The church where synth-pop history was made.",
-        "story": "Housed in the deconsecrated All Hallows Church in south London, Blackwing is where the first singles and the first two albums took shape — synth-pop history made inside a Victorian church."
+        "story": "Housed in the deconsecrated All Hallows Church in south London, Blackwing is where the first singles and the first two albums took shape — synth-pop history made inside a Victorian church.",
+        "trivia": {
+          "curious": "Blackwing was built inside a derelict Victorian church in Southwark.",
+          "fan": "Engineer Eric Radcliffe's gear shaped the early Mute sound across Yazoo and DM alike.",
+          "devotee": "The building, All Hallows, was bombed in WWII and never reconsecrated — a literal haunted box for synth-pop's birth."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1036,
+          51.4983
+        ]
+      },
       "properties": {
         "id": "dreaming-of-me",
         "title": "Dreaming of Me — debut single",
@@ -137,31 +213,59 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1036,
+          51.4983
+        ]
+      },
       "properties": {
         "id": "speak-and-spell",
         "title": "Speak & Spell",
         "category": "release",
         "year": 1981,
         "summary": "The debut album.",
-        "story": "Recorded at Blackwing and released in October 1981 — bubbly Vince Clarke synth-pop including Just Can't Get Enough. Weeks after release, Clarke announced he was leaving."
+        "story": "Recorded at Blackwing and released in October 1981 — bubbly Vince Clarke synth-pop including Just Can't Get Enough. Weeks after release, Clarke announced he was leaving.",
+        "trivia": {
+          "curious": "It's named after the Texas Instruments children's toy.",
+          "fan": "Vince Clarke wrote nearly all of it, then announced he was leaving weeks after release.",
+          "devotee": "The US Sire pressing swapped the tracklist and artwork — early collectors still hunt that variant."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.2266, 51.5098] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.2266,
+          51.5098
+        ]
+      },
       "properties": {
         "id": "totp",
         "title": "BBC Television Centre, London",
         "category": "milestone",
         "year": 1981,
         "summary": "Top of the Pops debut.",
-        "story": "Performing New Life on Top of the Pops in June 1981 put four Basildon teenagers in front of the whole nation. Fletch kept his bank job a little longer — just in case."
+        "story": "Performing New Life on Top of the Pops in June 1981 put four Basildon teenagers in front of the whole nation. Fletch kept his bank job a little longer — just in case.",
+        "trivia": {
+          "curious": "Top of the Pops was the BBC's must-watch weekly chart show.",
+          "fan": "Performing 'New Life' on it in 1981 put four Basildon teenagers in front of the whole nation.",
+          "devotee": "Fletch kept his day job at an insurance firm for a while even after the TOTP appearance — just in case it all fell apart."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-73.989, 40.732] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.989,
+          40.732
+        ]
+      },
       "properties": {
         "id": "first-us-show",
         "title": "The Ritz, New York",
@@ -174,7 +278,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1036,
+          51.4983
+        ]
+      },
       "properties": {
         "id": "a-broken-frame",
         "title": "A Broken Frame",
@@ -186,7 +296,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.223, 51.4895] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.223,
+          51.4895
+        ]
+      },
       "properties": {
         "id": "hammersmith-odeon",
         "title": "Hammersmith Odeon, London",
@@ -198,7 +314,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.081, 51.5265] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.081,
+          51.5265
+        ]
+      },
       "properties": {
         "id": "construction-time-again",
         "title": "Construction Time Again",
@@ -211,43 +333,82 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.3713, 52.5046] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.3713,
+          52.5046
+        ]
+      },
       "properties": {
         "id": "hansa",
         "title": "Hansa Studios, Berlin",
         "category": "studio",
         "year": 1983,
         "summary": "The hall by the Wall.",
-        "story": "The band's mid-80s creative home, metres from the Berlin Wall. The Meistersaal's atmosphere — and West Berlin's nightlife — seeped into the darker, industrial textures of the band's imperial phase."
+        "story": "The band's mid-80s creative home, metres from the Berlin Wall. The Meistersaal's atmosphere — and West Berlin's nightlife — seeped into the darker, industrial textures of the band's imperial phase.",
+        "trivia": {
+          "curious": "Hansa Studios sits just metres from where the Berlin Wall once ran.",
+          "fan": "Bowie and Iggy Pop recorded here years earlier — the 'Hansa by the Wall' mythology preceded DM.",
+          "devotee": "The cavernous Meistersaal's natural reverb is all over 'Stripped' — they miked the room itself, not just the kit."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.3713, 52.5046] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.3713,
+          52.5046
+        ]
+      },
       "properties": {
         "id": "some-great-reward",
         "title": "Some Great Reward",
         "category": "release",
         "year": 1984,
         "summary": "People are people — and blasphemous rumours.",
-        "story": "Largely recorded and mixed at Hansa Berlin. People Are People became their first US hit, Master and Servant scandalised radio, and Somebody proved Martin could break hearts with just a piano."
+        "story": "Largely recorded and mixed at Hansa Berlin. People Are People became their first US hit, Master and Servant scandalised radio, and Somebody proved Martin could break hearts with just a piano.",
+        "trivia": {
+          "curious": "It features 'People Are People' and 'Master and Servant'.",
+          "fan": "'Blasphemous Rumours' drew radio controversy for its line about God's sense of humour.",
+          "devotee": "For 'Pipeline' they recorded out on a railway embankment, banging real scrap metal — musique concrète smuggled into pop."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.3713, 52.5046] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.3713,
+          52.5046
+        ]
+      },
       "properties": {
         "id": "black-celebration",
         "title": "Black Celebration",
         "category": "release",
         "year": 1986,
         "summary": "The dark blueprint.",
-        "story": "Recorded at Westside London and Hansa Berlin, Black Celebration is the moment the band's gothic, atmospheric identity fully formed — Stripped, A Question of Lust, and a title track for everyone surviving another day."
+        "story": "Recorded at Westside London and Hansa Berlin, Black Celebration is the moment the band's gothic, atmospheric identity fully formed — Stripped, A Question of Lust, and a title track for everyone surviving another day.",
+        "trivia": {
+          "curious": "It's widely seen as their first fully 'dark' album.",
+          "fan": "The mood split critics at the time but built the devoted cult that followed.",
+          "devotee": "'Stripped' is built around a sampled revving motorbike and the groan of the Hansa studio lift."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [2.227, 48.87] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.227,
+          48.87
+        ]
+      },
       "properties": {
         "id": "music-for-the-masses",
         "title": "Music for the Masses",
@@ -255,24 +416,46 @@
         "year": 1987,
         "summary": "The album that conquered America.",
         "approx": true,
-        "story": "Recorded largely at Studio Guillaume Tell near Paris with Dave Bascombe. Never Let Me Down Again, Strangelove and Behind the Wheel armed the tour that ended at the Rose Bowl — the ironic title came true."
+        "story": "Recorded largely at Studio Guillaume Tell near Paris with Dave Bascombe. Never Let Me Down Again, Strangelove and Behind the Wheel armed the tour that ended at the Rose Bowl — the ironic title came true.",
+        "trivia": {
+          "curious": "The album's title was deliberately, knowingly ironic.",
+          "fan": "It broke them in America, a run that ended in triumph at the Rose Bowl.",
+          "devotee": "Corbijn plastered LA with roadside 'MFTM' loudhailer posters carrying no band name at all — pure provocation."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-118.1676, 34.1613] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -118.1676,
+          34.1613
+        ]
+      },
       "properties": {
         "id": "rose-bowl",
         "title": "Rose Bowl, Pasadena",
         "category": "gig",
         "year": 1988,
         "summary": "101 — the concert for the masses.",
-        "story": "On 18 June 1988, the Music for the Masses tour climaxed in front of roughly 65,000 fans — the band's 101st and final show of the tour, immortalised in D.A. Pennebaker's film and live album '101'. The moment a cult British synth band proved they were a stadium act in America."
+        "story": "On 18 June 1988, the Music for the Masses tour climaxed in front of roughly 65,000 fans — the band's 101st and final show of the tour, immortalised in D.A. Pennebaker's film and live album '101'. The moment a cult British synth band proved they were a stadium act in America.",
+        "trivia": {
+          "curious": "The 101 show was the 101st and final date of the Music for the Masses tour.",
+          "fan": "D.A. Pennebaker, who filmed Dylan's 'Dont Look Back', shot it as the documentary '101'.",
+          "devotee": "Booking a 60,000-seat stadium for a synth band was a wild gamble — a late KROQ radio push is what got it over the line."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-2.39, 37.05] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2.39,
+          37.05
+        ]
+      },
       "properties": {
         "id": "personal-jesus-video",
         "title": "Tabernas Desert, Almería",
@@ -285,7 +468,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [10.046, 56.5377] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.046,
+          56.5377
+        ]
+      },
       "properties": {
         "id": "puk",
         "title": "Puk Studios, Denmark",
@@ -298,7 +487,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [9.19, 45.4642] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.19,
+          45.4642
+        ]
+      },
       "properties": {
         "id": "violator",
         "title": "Violator",
@@ -306,12 +501,23 @@
         "year": 1990,
         "summary": "The masterpiece.",
         "approx": true,
-        "story": "Begun at Logic Studios in Milan, continued at Puk in Denmark and mixed in London. Personal Jesus, Enjoy the Silence, Policy of Truth, World in My Eyes — the album this very app is named after, and the band's creative and commercial peak."
+        "story": "Begun at Logic Studios in Milan, continued at Puk in Denmark and mixed in London. Personal Jesus, Enjoy the Silence, Policy of Truth, World in My Eyes — the album this very app is named after, and the band's creative and commercial peak.",
+        "trivia": {
+          "curious": "Violator's lead single was 'Personal Jesus'.",
+          "fan": "The title was a tongue-in-cheek joke about over-the-top heavy-metal album names.",
+          "devotee": "There is no song called 'Violator' — and Corbijn's lone rose on the sleeve was a deliberate nod to beauty hiding menace."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [8.0, 46.6] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          8,
+          46.6
+        ]
+      },
       "properties": {
         "id": "enjoy-the-silence",
         "title": "Swiss Alps",
@@ -319,12 +525,23 @@
         "year": 1990,
         "summary": "A king with a deckchair.",
         "approx": true,
-        "story": "Anton Corbijn filmed Dave Gahan wandering mountain landscapes as a king carrying a deckchair for the Enjoy the Silence video — shot across the Swiss Alps, Portugal and the Scottish Highlands. One of the most iconic music videos ever made."
+        "story": "Anton Corbijn filmed Dave Gahan wandering mountain landscapes as a king carrying a deckchair for the Enjoy the Silence video — shot across the Swiss Alps, Portugal and the Scottish Highlands. One of the most iconic music videos ever made.",
+        "trivia": {
+          "curious": "Dave plays a crown-wearing king wandering with a deckchair.",
+          "fan": "Martin wrote it as a slow ballad; Alan Wilder and Flood rebuilt it as a dance track overnight.",
+          "devotee": "The king's stroll was filmed across the Swiss Alps, the Scottish Highlands AND Portugal — geographic continuity be damned."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-118.385, 34.0905] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -118.385,
+          34.0905
+        ]
+      },
       "properties": {
         "id": "tower-records",
         "title": "Tower Records, Sunset Strip",
@@ -336,7 +553,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-74.0776, 40.8128] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.0776,
+          40.8128
+        ]
+      },
       "properties": {
         "id": "world-violation-giants",
         "title": "Giants Stadium, New Jersey",
@@ -348,7 +571,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-3.6883, 40.453] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.6883,
+          40.453
+        ]
+      },
       "properties": {
         "id": "madrid-villa",
         "title": "Madrid",
@@ -361,7 +590,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-3.6883, 40.453] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -3.6883,
+          40.453
+        ]
+      },
       "properties": {
         "id": "sofad",
         "title": "Songs of Faith and Devotion",
@@ -374,7 +609,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.07, 51.422] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.07,
+          51.422
+        ]
+      },
       "properties": {
         "id": "crystal-palace",
         "title": "Crystal Palace Bowl, London",
@@ -386,7 +627,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [28.0473, -26.2041] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          28.0473,
+          -26.2041
+        ]
+      },
       "properties": {
         "id": "exotic-johannesburg",
         "title": "Johannesburg, South Africa",
@@ -399,7 +646,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.205, 51.523] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.205,
+          51.523
+        ]
+      },
       "properties": {
         "id": "ultra",
         "title": "Ultra",
@@ -412,7 +665,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [26.729, 58.3776] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          26.729,
+          58.3776
+        ]
+      },
       "properties": {
         "id": "singles-tour-tartu",
         "title": "Tartu, Estonia",
@@ -425,7 +684,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.172, 51.533] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.172,
+          51.533
+        ]
+      },
       "properties": {
         "id": "exciter",
         "title": "Exciter",
@@ -438,7 +703,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.6982,
+          34.4208
+        ]
+      },
       "properties": {
         "id": "sound-design",
         "title": "Santa Barbara, California",
@@ -451,7 +722,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.6982,
+          34.4208
+        ]
+      },
       "properties": {
         "id": "playing-the-angel",
         "title": "Playing the Angel",
@@ -464,7 +741,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [9.1428, 45.402] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.1428,
+          45.402
+        ]
+      },
       "properties": {
         "id": "touring-the-angel-milan",
         "title": "Forum di Assago, Milan",
@@ -476,7 +759,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.6982,
+          34.4208
+        ]
+      },
       "properties": {
         "id": "sounds-of-the-universe",
         "title": "Sounds of the Universe",
@@ -489,7 +778,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [34.824, 32.078] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          34.824,
+          32.078
+        ]
+      },
       "properties": {
         "id": "tour-universe-tel-aviv",
         "title": "Ramat Gan Stadium, Tel Aviv",
@@ -501,7 +796,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [2.1174, 41.3641] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.1174,
+          41.3641
+        ]
+      },
       "properties": {
         "id": "tour-universe-barcelona",
         "title": "Palau Sant Jordi, Barcelona",
@@ -513,7 +814,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-74.002, 40.751] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -74.002,
+          40.751
+        ]
+      },
       "properties": {
         "id": "delta-machine",
         "title": "Delta Machine",
@@ -526,7 +833,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [2.3601, 48.9245] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.3601,
+          48.9245
+        ]
+      },
       "properties": {
         "id": "delta-stade-de-france",
         "title": "Stade de France, Paris",
@@ -538,7 +851,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.6982,
+          34.4208
+        ]
+      },
       "properties": {
         "id": "spirit",
         "title": "Spirit",
@@ -551,7 +870,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [17.929, 59.3725] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          17.929,
+          59.3725
+        ]
+      },
       "properties": {
         "id": "global-spirit-stockholm",
         "title": "Friends Arena, Stockholm",
@@ -563,7 +888,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.2406, 52.5158] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.2406,
+          52.5158
+        ]
+      },
       "properties": {
         "id": "waldbuehne",
         "title": "Waldbühne, Berlin",
@@ -575,7 +906,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-81.6954, 41.5085] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -81.6954,
+          41.5085
+        ]
+      },
       "properties": {
         "id": "rock-hall",
         "title": "Rock & Roll Hall of Fame, Cleveland",
@@ -587,7 +924,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.6982,
+          34.4208
+        ]
+      },
       "properties": {
         "id": "memento-mori",
         "title": "Memento Mori",
@@ -595,12 +938,23 @@
         "year": 2023,
         "summary": "Remember you must die — so live.",
         "approx": true,
-        "story": "Largely written before Andy Fletcher's death in May 2022 and recorded in Santa Barbara and New York with James Ford. Ghosts Again gave the band their most beloved single in years; the album is dedicated to Fletch's memory."
+        "story": "Largely written before Andy Fletcher's death in May 2022 and recorded in Santa Barbara and New York with James Ford. Ghosts Again gave the band their most beloved single in years; the album is dedicated to Fletch's memory.",
+        "trivia": {
+          "curious": "The title is Latin for 'remember you must die'.",
+          "fan": "Much of it was written before Fletch's death and finished after.",
+          "devotee": "Several songs predate the pandemic — the 'remember death' theme was chosen, unnervingly, before the losses arrived."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-121.4996, 38.5802] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -121.4996,
+          38.5802
+        ]
+      },
       "properties": {
         "id": "memento-mori-opener",
         "title": "Golden 1 Center, Sacramento",
@@ -612,7 +966,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.3415, 51.4559] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.3415,
+          51.4559
+        ]
+      },
       "properties": {
         "id": "memento-mori-twickenham",
         "title": "Twickenham Stadium, London",
@@ -624,7 +984,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-2.992, 43.289] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -2.992,
+          43.289
+        ]
+      },
       "properties": {
         "id": "memento-mori-finale",
         "title": "Bilbao, Spain",
@@ -637,7 +1003,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1036,
+          51.4983
+        ]
+      },
       "properties": {
         "id": "yazoo-upstairs",
         "title": "Yazoo — Upstairs at Eric's",
@@ -645,12 +1017,23 @@
         "year": 1982,
         "artistId": "yazoo",
         "summary": "Vince's next chapter, same studio.",
-        "story": "Within weeks of leaving Depeche Mode, Vince Clarke was back at Blackwing with Alison Moyet recording Yazoo's debut — named after engineer Eric Radcliffe's upstairs room. Only You and Don't Go came out of the very building where Speak & Spell was made."
+        "story": "Within weeks of leaving Depeche Mode, Vince Clarke was back at Blackwing with Alison Moyet recording Yazoo's debut — named after engineer Eric Radcliffe's upstairs room. Only You and Don't Go came out of the very building where Speak & Spell was made.",
+        "trivia": {
+          "curious": "Yazoo was Vince Clarke's duo with singer Alison Moyet.",
+          "fan": "It was recorded in the same Blackwing church that birthed DM's debut.",
+          "devotee": "Vince and Alison first connected through Melody Maker small ads; the album is named for Blackwing's Eric Radcliffe — 'Upstairs at Eric's'."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1036,
+          51.4983
+        ]
+      },
       "properties": {
         "id": "the-assembly-never-never",
         "title": "The Assembly — Never Never",
@@ -663,7 +1046,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1276, 51.5072] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1276,
+          51.5072
+        ]
+      },
       "properties": {
         "id": "erasure-formed",
         "title": "Erasure forms in London",
@@ -677,7 +1066,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [0.05, 50.95] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.05,
+          50.95
+        ]
+      },
       "properties": {
         "id": "recoil-thin-line",
         "title": "Recoil — The Thin Line, Sussex",
@@ -691,7 +1086,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.6982,
+          34.4208
+        ]
+      },
       "properties": {
         "id": "counterfeit2",
         "title": "Martin L. Gore — Counterfeit²",
@@ -705,7 +1106,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-73.99, 40.73] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99,
+          40.73
+        ]
+      },
       "properties": {
         "id": "paper-monsters",
         "title": "Dave Gahan — Paper Monsters",
@@ -719,7 +1126,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-118.25, 34.05] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -118.25,
+          34.05
+        ]
+      },
       "properties": {
         "id": "soulsavers",
         "title": "Dave Gahan & Soulsavers",
@@ -733,7 +1146,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [0.6049, 51.5864] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.6049,
+          51.5864
+        ]
+      },
       "properties": {
         "id": "crocs-rayleigh",
         "title": "Croc's, Rayleigh",
@@ -746,7 +1165,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [0.4889, 51.5762] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          0.4889,
+          51.5762
+        ]
+      },
       "properties": {
         "id": "vince-leaves",
         "title": "Vince Clarke leaves",
@@ -758,7 +1183,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1036,
+          51.4983
+        ]
+      },
       "properties": {
         "id": "just-cant-get-enough",
         "title": "Just Can't Get Enough — single",
@@ -770,7 +1201,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1036, 51.4983] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1036,
+          51.4983
+        ]
+      },
       "properties": {
         "id": "alan-joins",
         "title": "Alan Wilder joins",
@@ -783,7 +1220,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-117.3956, 34.1764] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -117.3956,
+          34.1764
+        ]
+      },
       "properties": {
         "id": "us-festival",
         "title": "US Festival, San Bernardino",
@@ -796,19 +1239,36 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.0813, 51.5066] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.0813,
+          51.5066
+        ]
+      },
       "properties": {
         "id": "people-are-people-video",
         "title": "HMS Belfast, London",
         "category": "video",
         "year": 1984,
         "summary": "People Are People — filmed on a warship.",
-        "story": "The video for the band's first US hit was shot aboard HMS Belfast on the Thames, its industrial clanks and naval guns matching the track's metal-bashing samples."
+        "story": "The video for the band's first US hit was shot aboard HMS Belfast on the Thames, its industrial clanks and naval guns matching the track's metal-bashing samples.",
+        "trivia": {
+          "curious": "It was filmed aboard HMS Belfast, moored on the Thames.",
+          "fan": "The song became their first US Top 20 hit.",
+          "devotee": "Its metallic clangs were sampled from the warship and the studio — they literally bashed the set they were filming on."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [9.9899, 53.6126] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.9899,
+          53.6126
+        ]
+      },
       "properties": {
         "id": "live-in-hamburg",
         "title": "Alsterdorfer Sporthalle, Hamburg",
@@ -820,7 +1280,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [139.6638, 35.7089] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          139.6638,
+          35.7089
+        ]
+      },
       "properties": {
         "id": "first-japan",
         "title": "Tokyo, Japan",
@@ -833,7 +1299,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [9.19, 45.4642] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.19,
+          45.4642
+        ]
+      },
       "properties": {
         "id": "personal-jesus-single",
         "title": "Personal Jesus — single",
@@ -841,12 +1313,23 @@
         "year": 1989,
         "approx": true,
         "summary": "Reach out and touch faith.",
-        "story": "Built around a blues guitar riff at Logic Studios in Milan and teased via newspaper ads reading 'Your own personal Jesus' with a phone number, it became one of the most covered songs in the catalogue — Johnny Cash and Marilyn Manson included."
+        "story": "Built around a blues guitar riff at Logic Studios in Milan and teased via newspaper ads reading 'Your own personal Jesus' with a phone number, it became one of the most covered songs in the catalogue — Johnny Cash and Marilyn Manson included.",
+        "trivia": {
+          "curious": "It was inspired by Priscilla Presley's memoir about life with Elvis.",
+          "fan": "Mute ran cryptic newspaper ads — 'Your own personal Jesus' with a phone number — before anyone knew it was DM.",
+          "devotee": "Call that ad's number and you actually heard the single down the line; the stunt jammed switchboards across Britain."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [10.046, 56.5377] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.046,
+          56.5377
+        ]
+      },
       "properties": {
         "id": "enjoy-the-silence-single",
         "title": "Enjoy the Silence — single",
@@ -859,7 +1342,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-4.5, 57.1] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -4.5,
+          57.1
+        ]
+      },
       "properties": {
         "id": "enjoy-the-silence-highlands",
         "title": "Scottish Highlands",
@@ -872,7 +1361,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-118.2399, 34.0739] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -118.2399,
+          34.0739
+        ]
+      },
       "properties": {
         "id": "dodger-stadium",
         "title": "Dodger Stadium, Los Angeles",
@@ -884,7 +1379,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-73.9934, 40.7505] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.9934,
+          40.7505
+        ]
+      },
       "properties": {
         "id": "msg",
         "title": "Madison Square Garden, New York",
@@ -896,7 +1397,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [2.7706, 50.4221] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.7706,
+          50.4221
+        ]
+      },
       "properties": {
         "id": "devotional-lievin",
         "title": "Stade Couvert, Liévin",
@@ -908,7 +1415,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-43.1965, -22.9132] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -43.1965,
+          -22.9132
+        ]
+      },
       "properties": {
         "id": "hollywood-rock-rio",
         "title": "Rio de Janeiro, Brazil",
@@ -921,7 +1434,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.118, 51.508] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.118,
+          51.508
+        ]
+      },
       "properties": {
         "id": "alan-leaves",
         "title": "Alan Wilder leaves",
@@ -934,7 +1453,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1485, 51.4828] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1485,
+          51.4828
+        ]
+      },
       "properties": {
         "id": "ultra-party",
         "title": "Adrenalin Village, London",
@@ -947,7 +1472,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-7.98, 31.63] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -7.98,
+          31.63
+        ]
+      },
       "properties": {
         "id": "barrel-of-a-gun-video",
         "title": "Morocco",
@@ -960,7 +1491,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [2.3786, 48.8384] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.3786,
+          48.8384
+        ]
+      },
       "properties": {
         "id": "one-night-in-paris",
         "title": "Palais Omnisports de Paris-Bercy",
@@ -972,7 +1509,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-118.2437, 34.0522] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -118.2437,
+          34.0522
+        ]
+      },
       "properties": {
         "id": "wrong-video",
         "title": "Downtown Los Angeles",
@@ -985,7 +1528,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-90.0578, 29.9647] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -90.0578,
+          29.9647
+        ]
+      },
       "properties": {
         "id": "heaven-video",
         "title": "Marigny Opera House, New Orleans",
@@ -997,7 +1546,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [13.4539, 52.5054] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          13.4539,
+          52.5054
+        ]
+      },
       "properties": {
         "id": "live-in-berlin",
         "title": "O2 World, Berlin",
@@ -1009,7 +1564,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-99.0976, 19.4042] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -99.0976,
+          19.4042
+        ]
+      },
       "properties": {
         "id": "foro-sol",
         "title": "Foro Sol, Mexico City",
@@ -1022,7 +1583,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.1276, 51.5072] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.1276,
+          51.5072
+        ]
+      },
       "properties": {
         "id": "fletch-farewell",
         "title": "Remembering Fletch",
@@ -1030,12 +1597,23 @@
         "year": 2022,
         "approx": true,
         "summary": "Andy Fletcher, 1961–2022.",
-        "story": "Andy Fletcher died at home in London in May 2022, aged 60. The band's heart and quiet diplomat for 42 years, he was honoured nightly on the Memento Mori tour — 'Fletch would have loved this song.'"
+        "story": "Andy Fletcher died at home in London in May 2022, aged 60. The band's heart and quiet diplomat for 42 years, he was honoured nightly on the Memento Mori tour — 'Fletch would have loved this song.'",
+        "trivia": {
+          "curious": "Andy 'Fletch' Fletcher died in May 2022, aged 60.",
+          "fan": "Fletch quietly ran much of the band's business affairs alongside playing keyboards.",
+          "devotee": "He once summed up his role with total honesty: 'Martin's the songwriter, Dave's the vocalist, and I bum around.'"
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-119.6982, 34.4208] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -119.6982,
+          34.4208
+        ]
+      },
       "properties": {
         "id": "ghosts-again-single",
         "title": "Ghosts Again — single",
@@ -1043,12 +1621,23 @@
         "year": 2023,
         "approx": true,
         "summary": "Heaven's dreaming, ghosts again.",
-        "story": "Written with Richard Butler of the Psychedelic Furs and recorded in Santa Barbara, Ghosts Again gave the two-piece Depeche Mode their most beloved single in a decade — melancholy, danceable, defiantly alive."
+        "story": "Written with Richard Butler of the Psychedelic Furs and recorded in Santa Barbara, Ghosts Again gave the two-piece Depeche Mode their most beloved single in a decade — melancholy, danceable, defiantly alive.",
+        "trivia": {
+          "curious": "It was the lead single from Memento Mori (2023).",
+          "fan": "It was co-written with Richard Butler of the Psychedelic Furs.",
+          "devotee": "Martin had the music before Fletch died; its eerie serenity ended up reframing the whole album as a goodbye."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-73.99, 40.735] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -73.99,
+          40.735
+        ]
+      },
       "properties": {
         "id": "ghosts-again-video",
         "title": "New York rooftops",
@@ -1061,7 +1650,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.2199, 51.5273] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.2199,
+          51.5273
+        ]
+      },
       "properties": {
         "id": "vcmg-ssss",
         "title": "VCMG — Ssss",
@@ -1075,7 +1670,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [9.19, 45.4642] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          9.19,
+          45.4642
+        ]
+      },
       "properties": {
         "id": "logic-milan",
         "title": "Logic Studios, Milan",
@@ -1088,7 +1689,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.2089, 51.5101] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.2089,
+          51.5101
+        ]
+      },
       "properties": {
         "id": "westside-london",
         "title": "Westside Studios, London",
@@ -1101,7 +1708,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-0.2825, 51.5582] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -0.2825,
+          51.5582
+        ]
+      },
       "properties": {
         "id": "wembley-arena",
         "title": "Wembley Arena, London",
@@ -1113,7 +1726,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [5.9989, 50.8932] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          5.9989,
+          50.8932
+        ]
+      },
       "properties": {
         "id": "pinkpop",
         "title": "Pinkpop Festival, Netherlands",
@@ -1126,7 +1745,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [4.66, 50.9886] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          4.66,
+          50.9886
+        ]
+      },
       "properties": {
         "id": "torhout-werchter",
         "title": "Rock Werchter, Belgium",
@@ -1139,7 +1764,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-58.3816, -34.6037] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -58.3816,
+          -34.6037
+        ]
+      },
       "properties": {
         "id": "buenos-aires-exotic",
         "title": "Buenos Aires, Argentina",
@@ -1152,7 +1783,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [10.046, 56.5377] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          10.046,
+          56.5377
+        ]
+      },
       "properties": {
         "id": "world-in-my-eyes",
         "title": "World in My Eyes — single",
@@ -1160,12 +1797,23 @@
         "year": 1990,
         "approx": true,
         "summary": "Let me take you on a trip.",
-        "story": "The final single from Violator, recorded at Puk in Denmark — Martin Gore's hymn to intimacy and travel. \"Let me take you on a trip\": the song that gives this atlas its name and its spirit."
+        "story": "The final single from Violator, recorded at Puk in Denmark — Martin Gore's hymn to intimacy and travel. \"Let me take you on a trip\": the song that gives this atlas its name and its spirit.",
+        "trivia": {
+          "curious": "It was the fourth and final single from Violator.",
+          "fan": "Its opening line, 'let me take you on a trip', gives this very atlas its name.",
+          "devotee": "Its remixes — the dub-heavy 'Oil Tank' cut among them — made it a club staple far beyond the album."
+        }
       }
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [2.3412, 48.8698] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.3412,
+          48.8698
+        ]
+      },
       "properties": {
         "id": "strangelove-video",
         "title": "Strangelove video, Paris",
@@ -1178,7 +1826,13 @@
     },
     {
       "type": "Feature",
-      "geometry": { "type": "Point", "coordinates": [-115.1728, 36.1147] },
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -115.1728,
+          36.1147
+        ]
+      },
       "properties": {
         "id": "its-no-good-video",
         "title": "It's No Good video, Las Vegas",

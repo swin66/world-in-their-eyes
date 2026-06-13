@@ -16,7 +16,8 @@
       "mcp__cloudflare__execute",
       "Bash(git push *)",
       "Bash(node -e \"const t=require\\('./public/data/trips.json'\\); const p=require\\('./public/data/places.json'\\); const ids=new Set\\(p.features.map\\(f=>f.properties.id\\)\\); for \\(const trip of t.trips\\){ const missing=trip.stops.filter\\(s=>!ids.has\\(s\\)\\); if\\(missing.length\\) console.log\\(trip.id,'MISSING:',missing\\);} console.log\\('trips:',t.trips.length,'all stop ids validated'\\);\")",
-      "Bash(node -e ' *)"
+      "Bash(node -e ' *)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('public/data/sideshows.json'\\)\\); JSON.parse\\(require\\('fs'\\).readFileSync\\('public/data/places.json'\\)\\); JSON.parse\\(require\\('fs'\\).readFileSync\\('public/data/band.json'\\)\\); console.log\\('JSON valid'\\)\")"
     ]
   }
 }

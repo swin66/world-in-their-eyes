@@ -673,6 +673,57 @@ html, body, #app {
   opacity: .85;
 }
 
+/* ---------- Trivia ('did you know' / deep cut) ---------- */
+.sheet-trivia {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent2) 40%, transparent);
+  background: color-mix(in srgb, var(--accent2) 10%, transparent);
+}
+.trivia-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--accent2);
+  margin-bottom: 4px;
+}
+.sheet-trivia p { margin: 0; font-size: 13.5px; line-height: 1.55; }
+
+/* ---------- Fan level picker ---------- */
+.fanlevel { margin: 8px 0 14px; }
+.fanlevel-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  opacity: .6;
+  margin-bottom: 6px;
+}
+.fanlevel-opts {
+  display: flex;
+  gap: 6px;
+}
+.fanlevel-opt {
+  flex: 1;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--text) 5%, transparent);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 10px 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.fanlevel-opt.on {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+}
+.fanlevel-blurb { margin: 8px 0 0; }
+
 /* ---------- Admin panel ---------- */
 .admin-tabs {
   display: flex;
@@ -811,6 +862,103 @@ html, body, #app {
   text-transform: uppercase;
   opacity: .45;
 }
+
+/* ---------- Sideshows (non-location carousel) ---------- */
+.sideshow {
+  position: absolute;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent2) 22%, transparent), transparent),
+    color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(16px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s;
+}
+.sideshow-open { opacity: 1; pointer-events: auto; }
+.sideshow-inner {
+  width: min(560px, calc(100vw - 32px));
+  padding: 0 4px;
+}
+.sideshow-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.sideshow-emoji { font-size: 28px; }
+.sideshow-head h2 {
+  margin: 0;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 20px;
+}
+.sideshow-head p { margin: 2px 0 0; font-size: 12px; opacity: .6; }
+.sideshow-close {
+  margin-left: auto;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--glass);
+  color: var(--text);
+  font-size: 15px;
+  cursor: pointer;
+}
+.sideshow-progress {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.sideshow-progress span {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 14%, transparent);
+  transition: background .3s;
+}
+.sideshow-progress span.on {
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+}
+.sideshow-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-top: 3px solid var(--accent);
+  border-radius: 20px;
+  padding: 22px 22px 26px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, .4);
+  min-height: 200px;
+}
+.sideshow-card-in { animation: sideshow-in .4s cubic-bezier(.25, .8, .3, 1); }
+@keyframes sideshow-in {
+  from { opacity: 0; transform: translateX(var(--dir, 24px)); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.sideshow-card-sub {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .1em;
+  color: var(--accent);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.sideshow-card h3 {
+  margin: 0 0 12px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 25px;
+}
+.sideshow-card p { margin: 0; font-size: 15px; line-height: 1.65; opacity: .9; }
+.sideshow-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+}
+.sideshow-nav .trip-nav:disabled { opacity: .35; cursor: default; }
+.sideshow-nav .btn-primary { flex: 1; padding: 14px; }
 
 /* ---------- Trips ---------- */
 .trip-list {

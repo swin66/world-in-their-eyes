@@ -43,6 +43,12 @@
     "providers": ["google", "apple"]
   },
   "wallIcons": ["🌹", "🎹", "♪", "💿", "🎤", "🎧"],
+  "fanLevels": [
+    { "id": "curious", "label": "Curious", "blurb": "New here — give me the essentials." },
+    { "id": "fan", "label": "Fan", "blurb": "I know the hits and the history." },
+    { "id": "devotee", "label": "Devotee", "blurb": "Hit me with the deep cuts." }
+  ],
+  "defaultFanLevel": "fan",
   "gamification": {
     "checkinLabel": "I made the pilgrimage",
     "contribution": { "label": "Add a memory", "points": 15, "mediaBonus": 10 },

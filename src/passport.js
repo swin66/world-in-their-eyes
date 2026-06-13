@@ -42,6 +42,8 @@ export function computeProgress(visited, places, band, extras = {}) {
     + mediaContributions * (gam.contribution?.mediaBonus || 0);
   const completedTrips = extras.completedTrips || new Set();
   points += completedTrips.size * (gam.tripPoints || 0);
+  const completedSideshows = extras.completedSideshows || new Set();
+  points += completedSideshows.size * (gam.tripPoints || 0);
 
   const badges = [
     ...gam.badges.map((b) => ({
@@ -83,6 +85,12 @@ export function computeProgress(visited, places, band, extras = {}) {
       label: t.badge,
       desc: `Complete the “${t.title}” trip`,
       earned: completedTrips.has(t.id),
+    })),
+    ...(extras.sideshowDefs || []).filter((s) => s.badge).map((s) => ({
+      id: `sideshow-${s.id}`,
+      label: s.badge,
+      desc: `Complete the “${s.title}” sideshow`,
+      earned: completedSideshows.has(s.id),
     })),
   ];
 

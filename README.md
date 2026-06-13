@@ -121,6 +121,25 @@ and its own badge (each trip's `badge` field).
 - Trip routes are drawn as **great-circle arcs** that bow over the globe (not
   flat chords), with an accent→accent2 gradient, a soft glow underlay, a white
   "comet" pulse that travels the route, and a pulsing ring on the current stop.
+- **Distance-aware travel** between stops: long hops fly slower and pull the
+  camera back so you see the leap across the globe (instead of whizzing over
+  blank map), and the auto-advance countdown only starts once the camera lands.
+
+## Fan level (profile) & tiered trivia
+
+Each visitor sets their level in the account screen — **Curious / Fan / Devotee**
+(`band.json` → `fanLevels`). Places carry tiered `trivia`, and the place card
+shows the line matching the level, falling back to the nearest lower tier — so a
+devotee gets the off-the-wall "Deep cut", while a newcomer gets the essentials
+and never the spoilers.
+
+## Sideshows (non-location exhibits)
+
+Not everything is on the map. **Sideshows** ([sideshows.json](public/data/sideshows.json))
+are guided, swipeable card carousels for things like the *gear that made the
+sound* or *sleeves & symbols* — opened from the 🧭 picker, with progress dots,
+keyboard/swipe nav, and a completion badge. Same lean-back feel as a trip, no
+coordinates required.
 
 Story walls open inside a **three.js planetarium** — a slowly rotating sphere
 of glowing particles in the band's colours with pointer parallax
