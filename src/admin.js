@@ -1,9 +1,13 @@
-// Band admin panel. Two tabs:
-//  - Theme: edit dark/light palettes + default mode. Saves to the database
-//    when signed in as admin with Supabase configured; otherwise downloads an
-//    updated band.json to commit to the repo (the free-tier workflow).
-//  - Import: pull a band's full discography from MusicBrainz (free, no key)
-//    into draft places, with pointers to the setlist.fm + AI enrichment scripts.
+// Full-screen Admin Console.
+//
+// Opened at #admin (see main.js routing), this replaces the old cramped tabbed
+// modal. Layout: top bar + grouped sidebar + a content pane that renders each
+// section as a stack of consistent "settings cards". A tiny declarative field
+// renderer keeps every card visually identical, so adding a new option later is
+// a one-line change — that's what keeps the whole thing obvious to set up.
+//
+// Save model (unchanged): admins write the band config to Supabase; everyone
+// else downloads an updated band.json to commit (the free-tier workflow).
 import { supabase } from './supabase.js';
 import { getRole } from './auth.js';
 
@@ -18,47 +22,175 @@ function download(filename, data) {
   URL.revokeObjectURL(a.href);
 }
 
-export function renderAdmin(container, state, helpers) {
-  const role = getRole();
-  if (!role || role === 'fan') {
-    container.innerHTML = `
-      <h2>Admin tools</h2>
-      <p class="modal-text">Your account doesn't have admin or editor access for
-      ${state.band.name}. Ask the atlas owner to upgrade your role.</p>
-      <button class="btn btn-primary" data-close>Close</button>`;
-    container.querySelector('[data-close]').addEventListener('click', helpers.onClose);
-    return;
+const escAttr = (s) =>
+  String(s ?? '').replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;');
+const escHtml = (s) =>
+  String(s ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+const el = (tag, cls) => { const n = document.createElement(tag); if (cls) n.className = cls; return n; };
+
+/* ===================== Templated field renderer ===================== */
+
+function controlHTML(def) {
+  const v = def.value;
+  const a = `data-key="${def.key}"`;
+  switch (def.type) {
+    case 'textarea':
+      return `<textarea ${a} rows="${def.rows || 3}">${escHtml(v)}</textarea>`;
+    case 'number':
+      return `<input type="number" ${a} value="${escAttr(v)}"${def.min != null ? ` min="${def.min}"` : ''}${def.max != null ? ` max="${def.max}"` : ''}>`;
+    case 'color':
+      return `<input type="color" ${a} value="${escAttr(v || '#000000')}">`;
+    case 'select':
+      return `<select ${a}>${def.options.map((o) =>
+        `<option value="${escAttr(o.value)}" ${o.value === v ? 'selected' : ''}>${escHtml(o.label)}</option>`).join('')}</select>`;
+    case 'image':
+      return `<div class="set-image">
+        <input type="text" ${a} value="${escAttr(v)}" placeholder="${escAttr(def.placeholder || 'https://… or /data/…')}">
+        <img class="set-image-preview" alt="" src="${escAttr(v)}"${v ? '' : ' hidden'} onerror="this.hidden=true">
+      </div>`;
+    default:
+      return `<input type="text" ${a} value="${escAttr(v)}"${def.placeholder ? ` placeholder="${escAttr(def.placeholder)}"` : ''}>`;
   }
-  let tab = 'theme';
-  const render = () => {
-    container.innerHTML = `
-      <h2>Admin tools <span class="role-pill">${role === 'local-admin' ? 'local preview' : role}</span></h2>
-      <div class="admin-tabs">
-        <button class="admin-tab ${tab === 'theme' ? 'admin-tab-active' : ''}" data-tab="theme">Theme</button>
-        <button class="admin-tab ${tab === 'places' ? 'admin-tab-active' : ''}" data-tab="places">Places</button>
-        <button class="admin-tab ${tab === 'trips' ? 'admin-tab-active' : ''}" data-tab="trips">Trips</button>
-        <button class="admin-tab ${tab === 'import' ? 'admin-tab-active' : ''}" data-tab="import">Import</button>
-        <button class="admin-tab ${tab === 'moderate' ? 'admin-tab-active' : ''}" data-tab="moderate">Moderation</button>
-      </div>
-      <div id="admin-body"></div>`;
-    for (const btn of container.querySelectorAll('.admin-tab')) {
-      btn.addEventListener('click', () => { tab = btn.dataset.tab; render(); });
-    }
-    const body = container.querySelector('#admin-body');
-    if (tab === 'theme') renderThemeTab(body, state, helpers, role);
-    else if (tab === 'places') renderPlacesTab(body, state, helpers, role);
-    else if (tab === 'trips') renderTripsTab(body, state, helpers, role);
-    else if (tab === 'moderate') renderModerationTab(body, state, helpers, role);
-    else renderImportTab(body, state, helpers, role);
-  };
-  render();
 }
 
-function renderThemeTab(body, state, { toast, setMode, onClose }, role) {
+function collectFields(scope) {
+  const out = {};
+  for (const node of scope.querySelectorAll('[data-key]')) {
+    const k = node.dataset.key;
+    if (node.type === 'checkbox') out[k] = node.checked;
+    else if (node.type === 'number') out[k] = node.value === '' ? null : Number(node.value);
+    else out[k] = node.value;
+  }
+  return out;
+}
+
+// Build a settings card element from a declarative field list.
+function settingsCard({ title, help, fields, saveLabel = 'Save', extraActions = '', onSave }) {
+  const card = el('section', 'set-card');
+  card.innerHTML = `
+    <header class="set-card-head">
+      <h3>${escHtml(title)}</h3>
+      ${help ? `<p>${help}</p>` : ''}
+    </header>
+    <div class="set-grid">
+      ${fields.map((f) => `
+        <div class="set-field set-field--${f.type} ${f.wide ? 'set-field--wide' : ''}">
+          <label>${escHtml(f.label)}${f.hint ? `<span class="set-hint">${escHtml(f.hint)}</span>` : ''}</label>
+          ${controlHTML(f)}
+        </div>`).join('')}
+    </div>
+    <div class="set-card-actions">${extraActions}
+      <button class="btn btn-primary" data-save>${escHtml(saveLabel)}</button>
+    </div>`;
+  // Live image previews
+  for (const inp of card.querySelectorAll('.set-field--image input[type="text"]')) {
+    inp.addEventListener('input', () => {
+      const img = inp.parentElement.querySelector('.set-image-preview');
+      if (inp.value) { img.src = inp.value; img.hidden = false; } else { img.hidden = true; }
+    });
+  }
+  card.querySelector('[data-save]').addEventListener('click', () => onSave(collectFields(card), card));
+  return card;
+}
+
+/* ===================== Persistence ===================== */
+
+async function saveBand(ctx, msg = 'Saved ✓') {
+  const { state, role, helpers } = ctx;
+  ctx.setStatus('saving');
+  if (supabase && role === 'admin') {
+    const { error } = await supabase.from('bands').update({ config: state.band }).eq('slug', state.band.slug);
+    if (error) { ctx.setStatus('error'); helpers.toast(`Save failed: ${error.message}`); return false; }
+    ctx.setStatus('saved'); helpers.toast(msg); return true;
+  }
+  download('band.json', state.band);
+  ctx.setStatus('saved');
+  helpers.toast('band.json downloaded — replace it in public/data/bands/' + state.band.slug + '/ and deploy');
+  return true;
+}
+
+/* ===================== Section: Overview ===================== */
+
+function renderOverview(pane, ctx) {
+  const { state, helpers } = ctx;
   const band = state.band;
-  body.innerHTML = `
-    <p class="modal-text dim">Colours apply per mode. Preview updates the app live;
-    Save ${supabase && role === 'admin' ? 'writes to the database' : 'downloads a band.json to commit'}.</p>
+  const places = state.places.features;
+  const stats = [
+    { n: places.length, label: 'Places' },
+    { n: state.trips.length, label: 'Trips' },
+    { n: Object.keys(band.categories).length, label: 'Categories' },
+    { n: '—', label: 'Pending reviews', id: 'ov-pending' },
+  ];
+  const checks = [
+    { ok: !!band.coverImage, label: 'Cover image set', go: 'identity' },
+    { ok: !!band.backgroundImage, label: 'Globe backdrop photo set', go: 'identity' },
+    { ok: !!(band.audience && Object.keys(band.audience).length), label: 'Audience map data', go: 'audience' },
+    { ok: places.length > 0, label: 'Places on the map', go: 'places' },
+    { ok: state.trips.length > 0, label: 'At least one guided trip', go: 'trips' },
+  ];
+  pane.innerHTML = `
+    <div class="set-card">
+      <header class="set-card-head"><h3>${escHtml(band.name)}</h3>
+        <p>Everything that shapes this atlas lives here. Pick a section on the left.</p></header>
+      <div class="ov-stats">
+        ${stats.map((s) => `<div class="ov-stat"><strong ${s.id ? `id="${s.id}"` : ''}>${s.n}</strong><span>${s.label}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="set-card">
+      <header class="set-card-head"><h3>Setup checklist</h3>
+        <p>A few things make the atlas feel complete. Tap any item to jump there.</p></header>
+      <div class="ov-checks">
+        ${checks.map((c) => `
+          <button class="ov-check ${c.ok ? 'ov-check--ok' : ''}" data-go="${c.go}">
+            <span class="ov-check-mark">${c.ok ? '✓' : '○'}</span>${escHtml(c.label)}
+            <span class="ov-check-go">›</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+  for (const b of pane.querySelectorAll('[data-go]')) {
+    b.addEventListener('click', () => ctx.go(b.dataset.go));
+  }
+  if (supabase) {
+    supabase.from('memories').select('id', { count: 'exact', head: true }).eq('approved', false)
+      .then(({ count }) => { const n = pane.querySelector('#ov-pending'); if (n) n.textContent = count ?? 0; });
+  } else {
+    const n = pane.querySelector('#ov-pending'); if (n) n.textContent = '0';
+  }
+}
+
+/* ===================== Section: Identity & look ===================== */
+
+function renderIdentity(pane, ctx) {
+  const { state, helpers, role } = ctx;
+  const band = state.band;
+
+  const identity = settingsCard({
+    title: 'Identity',
+    help: 'The headline, story and imagery fans see first.',
+    fields: [
+      { key: 'appTitle', label: 'Atlas title', type: 'text', value: band.appTitle, hint: 'big heading, e.g. “World in Their Eyes”' },
+      { key: 'name', label: 'Band name', type: 'text', value: band.name },
+      { key: 'tagline', label: 'Tagline', type: 'text', value: band.tagline, wide: true },
+      { key: 'description', label: 'Description', type: 'textarea', value: band.description, wide: true },
+      { key: 'coverImage', label: 'Cover image', type: 'image', value: band.coverImage, hint: 'shown on the band selector', wide: true },
+      { key: 'backgroundImage', label: 'Globe backdrop (B&W photo)', type: 'image', value: band.backgroundImage, hint: 'sits behind the globe', wide: true },
+      { key: 'yearStart', label: 'Timeline start year', type: 'number', value: band.yearStart },
+      { key: 'yearEnd', label: 'Timeline end year', type: 'number', value: band.yearEnd },
+    ],
+    saveLabel: 'Save identity',
+    onSave: async (v) => {
+      Object.assign(band, v);
+      helpers.refreshHeader?.();
+      await saveBand(ctx, 'Identity saved ✓');
+    },
+  });
+  pane.appendChild(identity);
+
+  // Theme card — reuses the proven dark/light colour logic.
+  const themeWrap = el('section', 'set-card');
+  themeWrap.innerHTML = `
+    <header class="set-card-head"><h3>Theme &amp; colours</h3>
+      <p>Colours apply per mode. Preview updates the app live; Save keeps it.</p></header>
     <div class="theme-grid">
       <span></span><span class="theme-col-head">Dark</span><span class="theme-col-head">Light</span>
       ${THEME_KEYS.map((k) => `
@@ -67,46 +199,115 @@ function renderThemeTab(body, state, { toast, setMode, onClose }, role) {
         <input type="color" data-mode="light" data-key="${k}" value="${band.themes.light[k]}">
       `).join('')}
     </div>
-    <div class="admin-row">
-      <span>Default mode</span>
-      <select id="default-mode">
+    <div class="set-field"><label>Default mode</label>
+      <select id="th-default">
         <option value="dark" ${band.defaultMode === 'dark' ? 'selected' : ''}>Dark</option>
         <option value="light" ${band.defaultMode === 'light' ? 'selected' : ''}>Light</option>
-      </select>
-    </div>
-    <div class="sheet-actions">
+      </select></div>
+    <div class="set-field set-field--wide"><label>Dark map style URL</label>
+      <input type="text" id="th-map-dark" value="${escAttr(band.themes.dark.mapStyle)}"></div>
+    <div class="set-field set-field--wide"><label>Light map style URL</label>
+      <input type="text" id="th-map-light" value="${escAttr(band.themes.light.mapStyle)}"></div>
+    <div class="set-card-actions">
       <button class="btn" data-preview>Preview</button>
       <button class="btn btn-primary" data-save>Save theme</button>
     </div>`;
-
-  const collect = () => {
-    for (const input of body.querySelectorAll('input[type="color"]')) {
+  const collectTheme = () => {
+    for (const input of themeWrap.querySelectorAll('input[type="color"]')) {
       band.themes[input.dataset.mode][input.dataset.key] = input.value;
     }
-    band.defaultMode = body.querySelector('#default-mode').value;
+    band.defaultMode = themeWrap.querySelector('#th-default').value;
+    band.themes.dark.mapStyle = themeWrap.querySelector('#th-map-dark').value.trim();
+    band.themes.light.mapStyle = themeWrap.querySelector('#th-map-light').value.trim();
   };
-  body.querySelector('[data-preview]').addEventListener('click', () => {
-    collect();
-    setMode(state.mode);
-    toast('Previewing theme — Save to keep it');
+  themeWrap.querySelector('[data-preview]').addEventListener('click', () => {
+    collectTheme(); helpers.setMode(state.mode); helpers.toast('Previewing — Save to keep it');
   });
-  body.querySelector('[data-save]').addEventListener('click', async () => {
-    collect();
-    if (supabase && role === 'admin') {
-      const { error } = await supabase.from('bands')
-        .update({ config: band }).eq('slug', band.slug);
-      toast(error ? `Save failed: ${error.message}` : 'Theme saved for everyone');
-    } else {
-      download('band.json', band);
-      toast('band.json downloaded — replace public/data/band.json and deploy');
-    }
-    setMode(state.mode);
+  themeWrap.querySelector('[data-save]').addEventListener('click', async () => {
+    collectTheme(); helpers.setMode(state.mode); await saveBand(ctx, 'Theme saved ✓');
   });
+  pane.appendChild(themeWrap);
 }
 
-function renderPlacesTab(body, state, { toast, refreshData }, role) {
+/* ===================== Section: Categories ===================== */
+
+function renderCategories(pane, ctx) {
+  const { state, helpers } = ctx;
+  const band = state.band;
+  let rows = Object.entries(band.categories).map(([id, c]) => ({ id, label: c.label, color: c.color, icon: c.icon }));
+
+  const card = el('section', 'set-card');
+  const draw = () => {
+    card.innerHTML = `
+      <header class="set-card-head"><h3>Categories</h3>
+        <p>The place types fans filter by — label, colour and a short symbol. Changes apply to the map instantly.</p></header>
+      <div class="cat-rows">
+        <div class="cat-row cat-row--head"><span>ID</span><span>Label</span><span>Colour</span><span>Icon</span><span></span></div>
+        ${rows.map((r, i) => `
+          <div class="cat-row" data-i="${i}">
+            <input class="cat-id" type="text" value="${escAttr(r.id)}" placeholder="id">
+            <input class="cat-label" type="text" value="${escAttr(r.label)}" placeholder="Label">
+            <input class="cat-color" type="color" value="${escAttr(r.color || '#888888')}">
+            <input class="cat-icon" type="text" value="${escAttr(r.icon)}" maxlength="2" placeholder="●">
+            <button class="btn-mini" data-del="${i}" title="Remove">✕</button>
+          </div>`).join('')}
+      </div>
+      <div class="set-card-actions">
+        <button class="btn" data-add>＋ Add category</button>
+        <button class="btn btn-primary" data-save>Save categories</button>
+      </div>`;
+    card.querySelector('[data-add]').addEventListener('click', () => {
+      collect(); rows.push({ id: '', label: '', color: '#8a7bd8', icon: '●' }); draw();
+    });
+    for (const b of card.querySelectorAll('[data-del]')) {
+      b.addEventListener('click', () => { collect(); rows.splice(Number(b.dataset.del), 1); draw(); });
+    }
+    card.querySelector('[data-save]').addEventListener('click', async () => {
+      collect();
+      const next = {};
+      for (const r of rows) {
+        const id = r.id.trim();
+        if (!id) continue;
+        next[id] = { label: r.label.trim() || id, color: r.color, icon: r.icon.trim() || '●' };
+      }
+      if (!Object.keys(next).length) { helpers.toast('Keep at least one category'); return; }
+      band.categories = next;
+      helpers.rebuildFilters?.();
+      helpers.refreshData?.();
+      await saveBand(ctx, 'Categories saved ✓');
+    });
+  };
+  const collect = () => {
+    rows = [...card.querySelectorAll('.cat-row[data-i]')].map((row) => ({
+      id: row.querySelector('.cat-id').value,
+      label: row.querySelector('.cat-label').value,
+      color: row.querySelector('.cat-color').value,
+      icon: row.querySelector('.cat-icon').value,
+    }));
+  };
+  draw();
+  pane.appendChild(card);
+}
+
+/* ===================== Section: Places (re-housed) ===================== */
+
+function renderPlaces(pane, ctx) {
+  const { state, role } = ctx;
+  const { toast, refreshData } = ctx.helpers;
   const places = state.places.features;
   let editing = null;
+
+  const card = el('section', 'set-card');
+  card.innerHTML = `
+    <header class="set-card-head"><h3>Places</h3>
+      <p>Edit any pin — its story, category, year and exact spot. Search to find one fast.</p></header>
+    <div class="admin-row">
+      <input type="text" id="place-search" placeholder="Search ${places.length} places…">
+      <button class="btn" id="places-download" style="flex:0 0 auto">Download places.json</button>
+    </div>
+    <div class="import-list" id="place-list"></div>
+    <div id="place-editor"></div>`;
+  pane.appendChild(card);
 
   const persist = async (feature) => {
     refreshData?.();
@@ -125,13 +326,13 @@ function renderPlacesTab(body, state, { toast, refreshData }, role) {
   };
 
   const renderList = () => {
-    const q = body.querySelector('#place-search')?.value?.toLowerCase() || '';
-    const list = body.querySelector('#place-list');
+    const q = card.querySelector('#place-search')?.value?.toLowerCase() || '';
+    const list = card.querySelector('#place-list');
     list.innerHTML = places
       .filter((f) => f.properties.title.toLowerCase().includes(q))
       .sort((a, b) => a.properties.year - b.properties.year)
       .map((f) => `<label data-id="${f.properties.id}" style="cursor:pointer">
-          ${f.properties.title}<span class="import-year">${f.properties.year}</span></label>`)
+          ${escHtml(f.properties.title)}<span class="import-year">${f.properties.year}</span></label>`)
       .join('');
     for (const row of list.querySelectorAll('label')) {
       row.addEventListener('click', () => {
@@ -144,28 +345,28 @@ function renderPlacesTab(body, state, { toast, refreshData }, role) {
   const renderEditor = () => {
     const f = editing;
     const p = f.properties;
-    const editor = body.querySelector('#place-editor');
+    const editor = card.querySelector('#place-editor');
     const others = places.filter((x) => x.properties.id !== p.id);
     editor.innerHTML = `
       <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
       <div class="admin-row"><span style="min-width:62px">Title</span>
-        <input type="text" id="pe-title" value="${p.title.replaceAll('"', '&quot;')}"></div>
+        <input type="text" id="pe-title" value="${escAttr(p.title)}"></div>
       <div class="admin-row"><span style="min-width:62px">Category</span>
         <select id="pe-category">${Object.entries(state.band.categories)
-          .map(([k, c]) => `<option value="${k}" ${k === p.category ? 'selected' : ''}>${c.label}</option>`).join('')}
+          .map(([k, c]) => `<option value="${k}" ${k === p.category ? 'selected' : ''}>${escHtml(c.label)}</option>`).join('')}
         </select>
-        <span>Year</span><input type="text" id="pe-year" value="${p.year}" style="flex:0 0 70px"></div>
+        <span>Year</span><input type="text" id="pe-year" value="${escAttr(p.year)}" style="flex:0 0 70px"></div>
       <div class="admin-row"><span style="min-width:62px">Summary</span>
-        <input type="text" id="pe-summary" value="${(p.summary || '').replaceAll('"', '&quot;')}"></div>
+        <input type="text" id="pe-summary" value="${escAttr(p.summary || '')}"></div>
       <div class="admin-row"><span style="min-width:62px">Story</span>
-        <textarea id="pe-story" rows="4" style="flex:1;background:color-mix(in srgb, var(--text) 7%, transparent);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--text);font:inherit;font-size:13px">${p.story || ''}</textarea></div>
+        <textarea id="pe-story" rows="4" style="flex:1;background:color-mix(in srgb, var(--text) 7%, transparent);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--text);font:inherit;font-size:13px">${escHtml(p.story || '')}</textarea></div>
       <div class="admin-row"><span style="min-width:62px">Lng / Lat</span>
         <input type="text" id="pe-lng" value="${f.geometry.coordinates[0]}">
         <input type="text" id="pe-lat" value="${f.geometry.coordinates[1]}"></div>
       <div class="admin-row"><span style="min-width:62px">Group with</span>
         <select id="pe-group">
           <option value="">— keep own location —</option>
-          ${others.map((x) => `<option value="${x.properties.id}">${x.properties.title} (${x.properties.year})</option>`).join('')}
+          ${others.map((x) => `<option value="${x.properties.id}">${escHtml(x.properties.title)} (${x.properties.year})</option>`).join('')}
         </select></div>
       <p class="modal-text dim">“Group with” snaps this item to another place's exact spot,
       so they cluster into one hotspot that opens as a story wall.</p>
@@ -200,23 +401,32 @@ function renderPlacesTab(body, state, { toast, refreshData }, role) {
     });
   };
 
-  body.innerHTML = `
-    <div class="admin-row">
-      <input type="text" id="place-search" placeholder="Search ${places.length} places…">
-      <button class="btn" id="places-download" style="flex:0 0 auto">Download places.json</button>
-    </div>
-    <div class="import-list" id="place-list"></div>
-    <div id="place-editor"></div>`;
-  body.querySelector('#place-search').addEventListener('input', renderList);
-  body.querySelector('#places-download').addEventListener('click', () => {
+  card.querySelector('#place-search').addEventListener('input', renderList);
+  card.querySelector('#places-download').addEventListener('click', () => {
     download('places.json', state.places);
-    toast('places.json downloaded — replace public/data/places.json and deploy');
+    toast('places.json downloaded — replace public/data and deploy');
   });
   renderList();
 }
 
-function renderTripsTab(body, state, { toast }, role) {
-  let editing = null; // a trip object being edited (live ref or a fresh one)
+/* ===================== Section: Trips (re-housed) ===================== */
+
+function renderTrips(pane, ctx) {
+  const { state, role } = ctx;
+  const { toast } = ctx.helpers;
+  let editing = null;
+
+  const card = el('section', 'set-card');
+  card.innerHTML = `
+    <header class="set-card-head"><h3>Trips</h3>
+      <p>Build custom journeys — an album in order, a tour leg, a member's story. They appear instantly in the 🧭 picker.</p></header>
+    <div class="admin-row">
+      <button class="btn" id="trip-new" style="flex:1">＋ New trip</button>
+      <button class="btn" id="trips-download" style="flex:1">Download trips.json</button>
+    </div>
+    <div class="import-list" id="trip-admin-list"></div>
+    <div id="trip-editor"></div>`;
+  pane.appendChild(card);
 
   const persist = async (trip) => {
     if (supabase && (role === 'admin' || role === 'editor')) {
@@ -228,7 +438,7 @@ function renderTripsTab(body, state, { toast }, role) {
       toast(error ? `Save failed: ${error.message}` : 'Trip saved for everyone');
     } else {
       download('trips.json', { trips: state.trips });
-      toast('trips.json downloaded — replace public/data/trips.json and deploy');
+      toast('trips.json downloaded — replace public/data and deploy');
     }
   };
 
@@ -238,32 +448,30 @@ function renderTripsTab(body, state, { toast }, role) {
 
   const renderEditor = () => {
     const t = editing;
-    const editor = body.querySelector('#trip-editor');
+    const editor = card.querySelector('#trip-editor');
     if (!t) { editor.innerHTML = ''; return; }
     editor.innerHTML = `
       <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
       <div class="admin-row"><span style="min-width:62px">Emoji</span>
-        <input type="text" id="te-emoji" value="${t.emoji || '📍'}" style="flex:0 0 64px">
-        <span>Title</span><input type="text" id="te-title" value="${(t.title || '').replaceAll('"', '&quot;')}"></div>
+        <input type="text" id="te-emoji" value="${escAttr(t.emoji || '📍')}" style="flex:0 0 64px">
+        <span>Title</span><input type="text" id="te-title" value="${escAttr(t.title || '')}"></div>
       <div class="admin-row"><span style="min-width:62px">Blurb</span>
-        <input type="text" id="te-desc" value="${(t.description || '').replaceAll('"', '&quot;')}"></div>
+        <input type="text" id="te-desc" value="${escAttr(t.description || '')}"></div>
       <div class="admin-row"><span style="min-width:62px">Badge</span>
-        <input type="text" id="te-badge" value="${(t.badge || '').replaceAll('"', '&quot;')}"
+        <input type="text" id="te-badge" value="${escAttr(t.badge || '')}"
           placeholder="Badge name awarded on completion"></div>
       <div class="admin-row">
         <select id="te-add-place">
           <option value="">Add a stop…</option>
           ${state.places.features
-            .slice()
-            .sort((a, b) => a.properties.year - b.properties.year)
-            .map((f) => `<option value="${f.properties.id}">${f.properties.title} (${f.properties.year})</option>`)
-            .join('')}
+            .slice().sort((a, b) => a.properties.year - b.properties.year)
+            .map((f) => `<option value="${f.properties.id}">${escHtml(f.properties.title)} (${f.properties.year})</option>`).join('')}
         </select>
       </div>
       <div class="import-list" id="te-stops">
         ${t.stops.map((id, i) => `
           <label data-i="${i}">
-            <span style="opacity:.45">${i + 1}.</span> ${placeTitle(id)}
+            <span style="opacity:.45">${i + 1}.</span> ${escHtml(placeTitle(id))}
             <span class="import-year">
               <button class="btn-mini" data-up="${i}">↑</button>
               <button class="btn-mini" data-down="${i}">↓</button>
@@ -275,28 +483,24 @@ function renderTripsTab(body, state, { toast }, role) {
 
     editor.querySelector('#te-add-place').addEventListener('change', (e) => {
       if (!e.target.value) return;
-      t.stops.push(e.target.value);
-      renderEditor();
+      t.stops.push(e.target.value); renderEditor();
     });
-    for (const btn of editor.querySelectorAll('[data-up]')) {
-      btn.addEventListener('click', () => {
-        const i = Number(btn.dataset.up);
+    for (const b of editor.querySelectorAll('[data-up]')) {
+      b.addEventListener('click', () => {
+        const i = Number(b.dataset.up);
         if (i > 0) [t.stops[i - 1], t.stops[i]] = [t.stops[i], t.stops[i - 1]];
         renderEditor();
       });
     }
-    for (const btn of editor.querySelectorAll('[data-down]')) {
-      btn.addEventListener('click', () => {
-        const i = Number(btn.dataset.down);
+    for (const b of editor.querySelectorAll('[data-down]')) {
+      b.addEventListener('click', () => {
+        const i = Number(b.dataset.down);
         if (i < t.stops.length - 1) [t.stops[i + 1], t.stops[i]] = [t.stops[i], t.stops[i + 1]];
         renderEditor();
       });
     }
-    for (const btn of editor.querySelectorAll('[data-del]')) {
-      btn.addEventListener('click', () => {
-        t.stops.splice(Number(btn.dataset.del), 1);
-        renderEditor();
-      });
+    for (const b of editor.querySelectorAll('[data-del]')) {
+      b.addEventListener('click', () => { t.stops.splice(Number(b.dataset.del), 1); renderEditor(); });
     }
     editor.querySelector('#te-save').addEventListener('click', () => {
       t.emoji = editor.querySelector('#te-emoji').value || '📍';
@@ -306,144 +510,33 @@ function renderTripsTab(body, state, { toast }, role) {
       if (!t.title || t.stops.length < 2) { toast('A trip needs a title and at least 2 stops'); return; }
       if (!t.id) t.id = slugify(t.title);
       if (!state.trips.includes(t)) state.trips.push(t);
-      persist(t);
-      renderList();
+      persist(t); renderList();
     });
   };
 
   const renderList = () => {
-    const list = body.querySelector('#trip-admin-list');
+    const list = card.querySelector('#trip-admin-list');
     list.innerHTML = state.trips.map((t) => `
-      <label data-id="${t.id}" style="cursor:pointer">${t.emoji} ${t.title}
+      <label data-id="${t.id}" style="cursor:pointer">${escHtml(t.emoji)} ${escHtml(t.title)}
         <span class="import-year">${t.stops.length} stops</span></label>`).join('');
     for (const row of list.querySelectorAll('label')) {
       row.addEventListener('click', () => {
-        editing = state.trips.find((t) => t.id === row.dataset.id);
-        renderEditor();
+        editing = state.trips.find((t) => t.id === row.dataset.id); renderEditor();
       });
     }
   };
 
-  body.innerHTML = `
-    <p class="modal-text dim">Build custom journeys — an album in order, a tour leg, a member's
-    story. Trips appear instantly in the 🧭 picker.</p>
-    <div class="admin-row">
-      <button class="btn" id="trip-new" style="flex:1">＋ New trip</button>
-      <button class="btn" id="trips-download" style="flex:1">Download trips.json</button>
-    </div>
-    <div class="import-list" id="trip-admin-list"></div>
-    <div id="trip-editor"></div>`;
-  body.querySelector('#trip-new').addEventListener('click', () => {
-    editing = { id: '', emoji: '📍', title: '', description: '', badge: '', stops: [] };
-    renderEditor();
+  card.querySelector('#trip-new').addEventListener('click', () => {
+    editing = { id: '', emoji: '📍', title: '', description: '', badge: '', stops: [] }; renderEditor();
   });
-  body.querySelector('#trips-download').addEventListener('click', () => {
+  card.querySelector('#trips-download').addEventListener('click', () => {
     download('trips.json', { trips: state.trips });
-    toast('trips.json downloaded — replace public/data/trips.json and deploy');
+    toast('trips.json downloaded — replace public/data and deploy');
   });
-  renderList();
-  renderEditor();
+  renderList(); renderEditor();
 }
 
-function renderModerationTab(body, state, { toast }, role) {
-  if (!supabase) {
-    body.innerHTML = `
-      <p class="modal-text">Moderation needs the cloud backend. Fan submissions only
-      reach other people once Supabase is connected — until then everything stays on
-      each fan's own device, so there's nothing to review.</p>
-      <p class="modal-text dim">Set up Supabase (see the README), sign in as admin or
-      editor, and this tab becomes the approval queue for memories, photos, ticket
-      stubs and links.</p>`;
-    return;
-  }
-
-  const placeTitle = (id) =>
-    state.places.features.find((f) => f.properties.id === id)?.properties.title || id;
-
-  const load = async () => {
-    body.innerHTML = '<p class="modal-text dim">Loading pending submissions…</p>';
-    const { data, error } = await supabase
-      .from('memories')
-      .select('id, place_id, kind, body, photo_url, link_url, created_at')
-      .eq('approved', false)
-      .order('created_at', { ascending: true })
-      .limit(100);
-    if (error) {
-      body.innerHTML = `<p class="modal-text">Couldn't load the queue: ${error.message}</p>`;
-      return;
-    }
-    if (!data.length) {
-      body.innerHTML = '<p class="modal-text dim">Queue is clear — nothing awaiting review. 🎉</p>';
-      return;
-    }
-    body.innerHTML = `
-      <p class="modal-text dim">${data.length} submission${data.length > 1 ? 's' : ''} awaiting review.
-      Approved items become visible to everyone; rejected ones are deleted.</p>
-      <div class="memories-list">
-        ${data.map((m) => `
-          <article class="memory" data-id="${m.id}">
-            <span class="memory-kind">${m.kind || 'memory'} · ${placeTitle(m.place_id)} ·
-              ${new Date(m.created_at).toLocaleDateString()}</span>
-            ${m.body ? `<p>${m.body}</p>` : ''}
-            ${m.photo_url ? `<img src="${m.photo_url}" alt="" loading="lazy">` : ''}
-            ${m.link_url ? `<a href="${m.link_url}" target="_blank" rel="noopener">${m.link_url}</a>` : ''}
-            <div class="sheet-actions" style="margin-top:10px">
-              <button class="btn" data-reject>Reject</button>
-              <button class="btn btn-primary" data-approve>Approve</button>
-            </div>
-          </article>`).join('')}
-      </div>`;
-    for (const card of body.querySelectorAll('.memory')) {
-      const id = card.dataset.id;
-      card.querySelector('[data-approve]').addEventListener('click', async () => {
-        const { error: err } = await supabase.from('memories')
-          .update({ approved: true }).eq('id', id);
-        toast(err ? `Approve failed: ${err.message}` : 'Approved — now public');
-        if (!err) card.remove();
-      });
-      card.querySelector('[data-reject]').addEventListener('click', async () => {
-        const { error: err } = await supabase.from('memories').delete().eq('id', id);
-        toast(err ? `Reject failed: ${err.message}` : 'Rejected and removed');
-        if (!err) card.remove();
-      });
-    }
-  };
-  load();
-}
-
-function renderImportTab(body, state, { toast }, role) {
-  const LS_SFM = 'wite:import:setlistfm';
-  let savedSfmKey = localStorage.getItem(LS_SFM) || '';
-  let importSource = 'releases';
-
-  const renderSource = () => {
-    body.querySelector('#import-body').innerHTML = '';
-    if (importSource === 'releases') renderReleasesImport(body.querySelector('#import-body'), state, toast, role);
-    else renderConcertsImport(body.querySelector('#import-body'), state, toast, role, savedSfmKey, (k) => {
-      savedSfmKey = k;
-      localStorage.setItem(LS_SFM, k);
-    });
-  };
-
-  body.innerHTML = `
-    <p class="modal-text dim">Pull data from free public sources — imports arrive as draft
-    places flagged <em>approximate</em>, ready for you to refine on the map.</p>
-    <div class="admin-tabs" style="margin-bottom:12px">
-      <button class="admin-tab admin-tab-active" data-src="releases">🎵 Albums</button>
-      <button class="admin-tab" data-src="concerts">🎤 Concert venues</button>
-    </div>
-    <div id="import-body"></div>`;
-
-  for (const btn of body.querySelectorAll('[data-src]')) {
-    btn.addEventListener('click', () => {
-      body.querySelectorAll('[data-src]').forEach((b) => b.classList.remove('admin-tab-active'));
-      btn.classList.add('admin-tab-active');
-      importSource = btn.dataset.src;
-      renderSource();
-    });
-  }
-  renderSource();
-}
+/* ===================== Section: Albums (MusicBrainz) ===================== */
 
 async function mbFindArtist(name) {
   const res = await fetch(
@@ -453,47 +546,41 @@ async function mbFindArtist(name) {
   return res.artists?.[0] ?? null;
 }
 
-async function persistPlaces(places, bandSlug, supabaseClient, role, downloadFn, toast) {
-  console.log('[persistPlaces] role:', role, 'supabase:', !!supabaseClient, 'places:', places.length);
-  if (supabaseClient && (role === 'admin' || role === 'editor')) {
+async function persistPlaces(places, bandSlug, role, toast, refreshData) {
+  if (supabase && (role === 'admin' || role === 'editor')) {
     const rows = places.map((f) => ({
       id: f.properties.id, band_slug: bandSlug,
       title: f.properties.title, category: f.properties.category,
-      year: f.properties.year, summary: f.properties.summary,
-      story: f.properties.story,
-      lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1],
-      approx: true,
+      year: f.properties.year, summary: f.properties.summary, story: f.properties.story,
+      lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1], approx: true,
     }));
-    console.log('[persistPlaces] upserting to Supabase:', rows.length, 'rows');
-    const { error } = await supabaseClient.from('places').upsert(rows);
-    console.log('[persistPlaces] result error:', error);
-    if (error) {
-      toast(`Import failed: ${error.message}`);
-      alert(`Import failed: ${error.message}\n\nCheck the browser console for details.`);
-    } else {
-      toast(`${places.length} draft places saved — reload the map to see them`);
-    }
+    const { error } = await supabase.from('places').upsert(rows);
+    if (error) { toast(`Import failed: ${error.message}`); return; }
+    toast(`${places.length} draft places saved — reload the map to see them`);
+    refreshData?.();
   } else {
-    console.log('[persistPlaces] falling back to download (role:', role, ')');
-    downloadFn('places-import.json', { type: 'FeatureCollection', features: places });
+    download('places-import.json', { type: 'FeatureCollection', features: places });
     toast(`${places.length} drafts downloaded — merge into places.json and redeploy`);
   }
 }
 
-function renderReleasesImport(body, state, toast, role) {
-  body.innerHTML = `
-    <p class="modal-text dim">Albums from <strong>MusicBrainz</strong> — free, no key needed.
-    Each release becomes a draft place at the band's home coordinates; move it to the
-    recording studio on the map.</p>
+function renderAlbums(pane, ctx) {
+  const { state, role } = ctx;
+  const { toast, refreshData } = ctx.helpers;
+  const card = el('section', 'set-card');
+  card.innerHTML = `
+    <header class="set-card-head"><h3>Albums · MusicBrainz</h3>
+      <p>Free, no key needed. Each release becomes a draft place at the band's home coordinates — move it to the recording studio afterwards.</p></header>
     <div class="admin-row">
-      <input type="text" id="mb-artist" value="${state.band.name}" placeholder="Artist name">
+      <input type="text" id="mb-artist" value="${escAttr(state.band.name)}" placeholder="Artist name">
       <button class="btn btn-primary" id="mb-search" style="flex:0 0 auto">Search</button>
     </div>
     <div id="mb-results"></div>`;
+  pane.appendChild(card);
 
-  body.querySelector('#mb-search').addEventListener('click', async () => {
-    const name = body.querySelector('#mb-artist').value.trim();
-    const results = body.querySelector('#mb-results');
+  card.querySelector('#mb-search').addEventListener('click', async () => {
+    const name = card.querySelector('#mb-artist').value.trim();
+    const results = card.querySelector('#mb-results');
     if (!name) return;
     results.innerHTML = '<p class="modal-text dim">Searching MusicBrainz…</p>';
     try {
@@ -508,18 +595,17 @@ function renderReleasesImport(body, state, toast, role) {
         .sort((a, b) => a['first-release-date'].localeCompare(b['first-release-date']));
       if (!albums.length) { results.innerHTML = '<p class="modal-text">No albums found.</p>'; return; }
       results.innerHTML = `
-        <p class="modal-text dim">${albums.length} albums found for <strong>${artist.name}</strong>.
+        <p class="modal-text dim">${albums.length} albums found for <strong>${escHtml(artist.name)}</strong>.
           <button class="btn-mini" id="mb-all">All</button>
           <button class="btn-mini" id="mb-none">None</button></p>
         <div class="import-list">
           ${albums.map((a, i) => `
             <label><input type="checkbox" data-i="${i}" checked>
-              ${a.title}<span class="import-year">${a['first-release-date'].slice(0, 4)}</span>
+              ${escHtml(a.title)}<span class="import-year">${a['first-release-date'].slice(0, 4)}</span>
             </label>`).join('')}
         </div>
         <button class="btn btn-primary" id="mb-import" style="width:100%;margin-top:10px">
           Import selected as draft places</button>`;
-
       results.querySelector('#mb-all').addEventListener('click', () =>
         results.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = true; }));
       results.querySelector('#mb-none').addEventListener('click', () =>
@@ -531,61 +617,64 @@ function renderReleasesImport(body, state, toast, role) {
           type: 'Feature',
           geometry: { type: 'Point', coordinates: state.band.map.center },
           properties: {
-            id: `mb-release-${a.id.slice(0, 8)}`,
-            title: a.title, category: 'release',
+            id: `mb-release-${a.id.slice(0, 8)}`, title: a.title, category: 'release',
             year: +a['first-release-date'].slice(0, 4),
             summary: `Album released ${a['first-release-date']}.`,
             story: 'Imported from MusicBrainz. Move this pin to the recording studio and add the story.',
           },
         }));
-        await persistPlaces(features, state.band.slug, supabase, role, download, toast);
+        await persistPlaces(features, state.band.slug, role, toast, refreshData);
       });
     } catch (err) {
-      results.innerHTML = `<p class="modal-text">Error: ${err.message}</p>`;
+      results.innerHTML = `<p class="modal-text">Error: ${escHtml(err.message)}</p>`;
     }
   });
 }
 
-function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
-  body.innerHTML = `
-    <p class="modal-text dim">Concert venues from <strong>Setlist.fm</strong> — free API key,
-    real venue coordinates. Each unique venue becomes one <em>Live</em> place on the map
-    with a count of how many times the band played there.</p>
+/* ===================== Section: Concerts (Setlist.fm) ===================== */
+
+function renderConcerts(pane, ctx) {
+  const { state, role } = ctx;
+  const { toast, refreshData } = ctx.helpers;
+  const LS = 'wite:import:setlistfm';
+  const savedKey = localStorage.getItem(LS) || '';
+
+  const card = el('section', 'set-card');
+  card.innerHTML = `
+    <header class="set-card-head"><h3>Concerts · Setlist.fm</h3>
+      <p>Free API key, real venue coordinates. Each unique venue becomes one <em>Live</em> place with a count of how many times the band played there.</p></header>
     <div class="admin-row">
-      <input type="text" id="sfm-key" placeholder="Setlist.fm API key" value="${savedKey}"
-        style="font-family:monospace;font-size:12px">
-      <a href="https://www.setlist.fm/settings/api" target="_blank" rel="noopener"
-        class="btn" style="flex:0 0 auto;white-space:nowrap">Get free key ↗</a>
+      <input type="text" id="sfm-key" placeholder="Setlist.fm API key" value="${escAttr(savedKey)}" style="font-family:monospace;font-size:12px">
+      <a href="https://www.setlist.fm/settings/api" target="_blank" rel="noopener" class="btn" style="flex:0 0 auto;white-space:nowrap">Get free key ↗</a>
     </div>
     <div class="admin-row">
-      <input type="text" id="sfm-artist" value="${state.band.name}" placeholder="Artist name">
+      <input type="text" id="sfm-artist" value="${escAttr(state.band.name)}" placeholder="Artist name">
       <input type="number" id="sfm-pages" value="3" min="1" max="50" style="flex:0 0 64px" title="Pages to fetch (20 shows each)">
       <button class="btn btn-primary" id="sfm-search" style="flex:0 0 auto">Search</button>
     </div>
     <p class="modal-text dim" style="margin-top:0">Pages × 20 = shows fetched. Start with 3 (60 shows) — add more once it's working.</p>
     <div id="sfm-results"></div>`;
+  pane.appendChild(card);
 
-  body.querySelector('#sfm-key').addEventListener('change', (e) => saveKey(e.target.value.trim()));
+  const saveKey = (k) => localStorage.setItem(LS, k);
+  card.querySelector('#sfm-key').addEventListener('change', (e) => saveKey(e.target.value.trim()));
 
-  body.querySelector('#sfm-search').addEventListener('click', async () => {
-    const key = body.querySelector('#sfm-key').value.trim();
-    const artist = body.querySelector('#sfm-artist').value.trim();
-    const pages = Math.min(50, Math.max(1, +body.querySelector('#sfm-pages').value || 5));
-    const results = body.querySelector('#sfm-results');
+  card.querySelector('#sfm-search').addEventListener('click', async () => {
+    const key = card.querySelector('#sfm-key').value.trim();
+    const artist = card.querySelector('#sfm-artist').value.trim();
+    const pages = Math.min(50, Math.max(1, +card.querySelector('#sfm-pages').value || 5));
+    const results = card.querySelector('#sfm-results');
     if (!key) { toast('Enter your Setlist.fm API key first'); return; }
     if (!artist) return;
     saveKey(key);
-
     results.innerHTML = '<p class="modal-text dim">Fetching setlists…</p>';
 
     try {
-      const venueMap = new Map(); // venue.id → { venue, shows: [{date, url}] }
-
+      const venueMap = new Map();
       const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
       const sfmFetch = async (p) => {
         const r = await fetch(`/api/setlistfm?artist=${encodeURIComponent(artist)}&p=${p}`, { headers: { 'x-sfm-key': key } });
-        let payload;
-        try { payload = await r.json(); } catch { payload = null; }
+        let payload; try { payload = await r.json(); } catch { payload = null; }
         if (!r.ok) {
           const detail = payload?.error || payload?.raw || JSON.stringify(payload || '').slice(0, 200);
           const debugInfo = payload?.debug ? `\n\nDebug: ${JSON.stringify(payload.debug, null, 2)}` : '';
@@ -599,77 +688,370 @@ function renderConcertsImport(body, state, toast, role, savedKey, saveKey) {
         results.querySelector('p').textContent = `Fetching page ${p} of ${pages}…`;
         if (p > 1) await sleep(2500);
         const data = await sfmFetch(p);
-
         for (const sl of data.setlist || []) {
-          if (!sl.venue?.city?.coords) continue; // skip venues with no coords
+          if (!sl.venue?.city?.coords) continue;
           const vid = sl.venue.id;
-          if (!venueMap.has(vid)) {
-            venueMap.set(vid, { venue: sl.venue, shows: [] });
-          }
+          if (!venueMap.has(vid)) venueMap.set(vid, { venue: sl.venue, shows: [] });
           venueMap.get(vid).shows.push({ date: sl.eventDate, url: sl.url });
         }
-
-        const total = data.total ?? 0;
-        const maxPage = Math.ceil(total / 20);
-        if (p >= maxPage) break; // no more pages
+        const maxPage = Math.ceil((data.total ?? 0) / 20);
+        if (p >= maxPage) break;
       }
 
-      if (!venueMap.size) {
-        results.innerHTML = '<p class="modal-text">No shows with venue coordinates found.</p>';
-        return;
-      }
-
+      if (!venueMap.size) { results.innerHTML = '<p class="modal-text">No shows with venue coordinates found.</p>'; return; }
       const venues = [...venueMap.values()].sort((a, b) => b.shows.length - a.shows.length);
       results.innerHTML = `
-        <p class="modal-text dim">${venues.length} unique venues found across ${venues.reduce((s, v) => s + v.shows.length, 0)} shows.
+        <p class="modal-text dim">${venues.length} unique venues across ${venues.reduce((s, v) => s + v.shows.length, 0)} shows.
           <button class="btn-mini" id="sfm-all">All</button>
           <button class="btn-mini" id="sfm-none">None</button></p>
         <div class="import-list">
           ${venues.map((v, i) => {
             const city = v.venue.city;
-            const label = `${v.venue.name}, ${city.name}, ${city.country.name}`;
             const years = v.shows.map((s) => +s.date.split('-').pop()).sort();
-            const yearRange = years[0] === years[years.length - 1] ? years[0] : `${years[0]}–${years[years.length - 1]}`;
+            const yr = years[0] === years[years.length - 1] ? years[0] : `${years[0]}–${years[years.length - 1]}`;
             return `<label><input type="checkbox" data-i="${i}" checked>
-              ${label}
-              <span class="import-year">${v.shows.length} show${v.shows.length > 1 ? 's' : ''} · ${yearRange}</span>
-            </label>`;
+              ${escHtml(`${v.venue.name}, ${city.name}, ${city.country.name}`)}
+              <span class="import-year">${v.shows.length} show${v.shows.length > 1 ? 's' : ''} · ${yr}</span></label>`;
           }).join('')}
         </div>
-        <button class="btn btn-primary" id="sfm-import" style="width:100%;margin-top:10px">
-          Import selected venues as places</button>`;
-
+        <button class="btn btn-primary" id="sfm-import" style="width:100%;margin-top:10px">Import selected venues as places</button>`;
       results.querySelector('#sfm-all').addEventListener('click', () =>
         results.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = true; }));
       results.querySelector('#sfm-none').addEventListener('click', () =>
         results.querySelectorAll('input[type=checkbox]').forEach((c) => { c.checked = false; }));
-
       results.querySelector('#sfm-import').addEventListener('click', async () => {
         const chosen = [...results.querySelectorAll('input:checked')].map((cb) => venues[+cb.dataset.i]);
         if (!chosen.length) { toast('Nothing selected'); return; }
         const features = chosen.map((v) => {
           const city = v.venue.city;
           const years = v.shows.map((s) => +s.date.split('-').pop()).sort();
-          const firstYear = years[0];
           const shows = v.shows.length;
           return {
             type: 'Feature',
             geometry: { type: 'Point', coordinates: [+city.coords.long, +city.coords.lat] },
             properties: {
-              id: `sfm-venue-${v.venue.id}`,
-              title: `${v.venue.name}, ${city.name}`,
-              category: 'gig',
-              year: firstYear,
+              id: `sfm-venue-${v.venue.id}`, title: `${v.venue.name}, ${city.name}`, category: 'gig',
+              year: years[0],
               summary: `${shows} show${shows > 1 ? 's' : ''} at this venue · ${city.name}, ${city.country.name}`,
               story: `Played here ${shows} time${shows > 1 ? 's' : ''}. Setlist.fm: ${v.shows[0].url}`,
             },
           };
         });
-        await persistPlaces(features, state.band.slug, supabase, role, download, toast);
+        await persistPlaces(features, state.band.slug, role, toast, refreshData);
       });
     } catch (err) {
       const [headline, ...rest] = err.message.split('\n\nDebug:');
-      results.innerHTML = `<p class="modal-text" style="color:var(--error,#f66)">Error: ${headline}</p>${rest.length ? `<pre style="font-size:10px;overflow:auto;max-height:200px;background:var(--surface);padding:8px;border-radius:6px;color:var(--text)">${rest.join('')}</pre>` : ''}`;
+      results.innerHTML = `<p class="modal-text" style="color:var(--error,#f66)">Error: ${escHtml(headline)}</p>${rest.length ? `<pre style="font-size:10px;overflow:auto;max-height:200px;background:var(--surface);padding:8px;border-radius:6px;color:var(--text)">${escHtml(rest.join(''))}</pre>` : ''}`;
     }
   });
+}
+
+/* ===================== Section: Audience map (NEW) ===================== */
+
+let _countries = null;
+async function loadCountries() {
+  if (_countries) return _countries;
+  const g = await fetch('/data/world-countries.json').then((r) => r.json());
+  _countries = g.features
+    .map((f) => ({ iso: f.properties.iso, name: f.properties.name }))
+    .filter((c) => c.iso && c.iso !== '-99')
+    .sort((a, b) => a.name.localeCompare(b.name));
+  return _countries;
+}
+
+// Parse pasted JSON or CSV (ISO,value per line) into { values, unknown[] }.
+function parseAudience(text, validIso) {
+  const values = {};
+  const unknown = [];
+  const add = (iso, val) => {
+    iso = String(iso).trim().toUpperCase();
+    const n = Number(val);
+    if (!iso || Number.isNaN(n)) return;
+    if (!validIso.has(iso)) { unknown.push(iso); return; }
+    values[iso] = n;
+  };
+  const trimmed = text.trim();
+  if (!trimmed) return { values, unknown };
+  try {
+    const obj = JSON.parse(trimmed);
+    if (obj && typeof obj === 'object') { for (const [k, v] of Object.entries(obj)) add(k, v); return { values, unknown }; }
+  } catch { /* fall through to CSV */ }
+  for (const line of trimmed.split('\n')) {
+    const [iso, val] = line.split(/[,\t ]+/);
+    if (iso) add(iso, val);
+  }
+  return { values, unknown };
+}
+
+function renderAudience(pane, ctx) {
+  const { state, helpers } = ctx;
+  const band = state.band;
+  const card = el('section', 'set-card');
+  card.innerHTML = `<header class="set-card-head"><h3>Audience map</h3>
+    <p>Tint each country by streams, fans or sales — subtle by design. Leave it on “Auto” to colour by how many of the band's places fall in each country.</p></header>
+    <p class="modal-text dim">Loading countries…</p>`;
+  pane.appendChild(card);
+
+  loadCountries().then((countries) => {
+    const validIso = new Set(countries.map((c) => c.iso));
+    const nameOf = (iso) => countries.find((c) => c.iso === iso)?.name || iso;
+    let values = { ...(band.audience || {}) };
+    let metric = band.audienceMetric || '';
+    let mode = Object.keys(values).length ? 'manual' : 'auto';
+
+    const applyPreview = (vals) => {
+      band.audience = vals && Object.keys(vals).length ? vals : undefined;
+      band.audienceMetric = metric || undefined;
+      helpers.refreshChoropleth?.();
+    };
+
+    const bodyHTML = () => {
+      if (mode === 'auto') {
+        return `<p class="modal-text dim">Countries are tinted automatically by the band's place &amp; gig density — it updates itself as you import more. Nothing to enter.</p>`;
+      }
+      if (mode === 'paste') {
+        const prefill = Object.keys(values).length ? JSON.stringify(values, null, 2) : '';
+        return `
+          <textarea id="aud-paste" rows="8" placeholder='{ "GB": 1000000, "DE": 600000 }   — or one per line:   GB,1000000'>${escHtml(prefill)}</textarea>
+          <div class="admin-row" style="margin-top:8px"><button class="btn" id="aud-parse">Parse &amp; preview</button></div>
+          <div id="aud-paste-status"></div>`;
+      }
+      // manual
+      const rows = Object.entries(values).sort((a, b) => b[1] - a[1]);
+      return `
+        <div class="admin-row">
+          <input type="text" id="aud-add" list="aud-countries" placeholder="Add a country…">
+          <button class="btn" id="aud-add-btn" style="flex:0 0 auto">＋ Add</button>
+        </div>
+        <datalist id="aud-countries">${countries.map((c) => `<option value="${escAttr(c.iso)} — ${escAttr(c.name)}">`).join('')}</datalist>
+        <div class="aud-rows" id="aud-rows">
+          ${rows.length ? rows.map(([iso, val]) => `
+            <div class="aud-row" data-iso="${escAttr(iso)}">
+              <span class="aud-iso">${escAttr(iso)}</span>
+              <span class="aud-name">${escHtml(nameOf(iso))}</span>
+              <input type="number" class="aud-val" value="${escAttr(val)}" min="0">
+              <button class="btn-mini" data-del="${escAttr(iso)}">✕</button>
+            </div>`).join('') : '<p class="modal-text dim">No countries yet — add some above, or paste a list.</p>'}
+        </div>`;
+    };
+
+    const draw = () => {
+      card.innerHTML = `
+        <header class="set-card-head"><h3>Audience map</h3>
+          <p>Tint each country by streams, fans or sales — subtle by design.</p></header>
+        <div class="seg" id="aud-modes">
+          ${[['auto', 'Auto from places'], ['manual', 'Manual entry'], ['paste', 'Paste data']]
+            .map(([m, label]) => `<button class="seg-btn ${mode === m ? 'seg-btn--on' : ''}" data-mode="${m}">${label}</button>`).join('')}
+        </div>
+        <div class="set-field set-field--wide"><label>What does the value mean?<span class="set-hint">shown in the map legend later</span></label>
+          <input type="text" id="aud-metric" value="${escAttr(metric)}" placeholder="e.g. Spotify monthly listeners"></div>
+        <div id="aud-body">${bodyHTML()}</div>
+        <div class="set-card-actions">
+          <button class="btn" data-preview>Preview on globe</button>
+          <button class="btn btn-primary" data-save>Save audience</button>
+        </div>`;
+
+      card.querySelector('#aud-metric').addEventListener('input', (e) => { metric = e.target.value; });
+      for (const b of card.querySelectorAll('[data-mode]')) {
+        b.addEventListener('click', () => { collectManual(); mode = b.dataset.mode; draw(); });
+      }
+      if (mode === 'manual') {
+        const addRow = () => {
+          const raw = card.querySelector('#aud-add').value.trim();
+          const iso = raw.split('—')[0].trim().toUpperCase();
+          if (!validIso.has(iso)) { helpers.toast('Pick a country from the list'); return; }
+          if (!(iso in values)) values[iso] = 0;
+          card.querySelector('#aud-add').value = '';
+          draw();
+        };
+        card.querySelector('#aud-add-btn').addEventListener('click', addRow);
+        card.querySelector('#aud-add').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addRow(); } });
+        for (const b of card.querySelectorAll('[data-del]')) {
+          b.addEventListener('click', () => { collectManual(); delete values[b.dataset.del]; draw(); });
+        }
+      }
+      if (mode === 'paste') {
+        card.querySelector('#aud-parse').addEventListener('click', () => {
+          const { values: parsed, unknown } = parseAudience(card.querySelector('#aud-paste').value, validIso);
+          values = parsed;
+          const status = card.querySelector('#aud-paste-status');
+          const n = Object.keys(parsed).length;
+          status.innerHTML = `<p class="modal-text ${n ? '' : 'dim'}">${n} countr${n === 1 ? 'y' : 'ies'} parsed${unknown.length ? ` · ignored unknown codes: ${escHtml(unknown.slice(0, 8).join(', '))}` : ''}.</p>`;
+          applyPreview(parsed);
+        });
+      }
+
+      card.querySelector('[data-preview]').addEventListener('click', () => {
+        collectManual();
+        applyPreview(mode === 'auto' ? null : values);
+        helpers.toast('Previewing on the globe');
+      });
+      card.querySelector('[data-save]').addEventListener('click', async () => {
+        collectManual();
+        if (mode === 'auto') { values = {}; band.audience = undefined; band.audienceMetric = undefined; }
+        else { band.audience = Object.keys(values).length ? values : undefined; band.audienceMetric = metric || undefined; }
+        helpers.refreshChoropleth?.();
+        await saveBand(ctx, 'Audience saved ✓');
+      });
+    };
+
+    const collectManual = () => {
+      if (mode !== 'manual') return;
+      for (const row of card.querySelectorAll('.aud-row')) {
+        values[row.dataset.iso] = Number(row.querySelector('.aud-val').value) || 0;
+      }
+    };
+
+    draw();
+  });
+}
+
+/* ===================== Section: Moderation (re-housed) ===================== */
+
+function renderModeration(pane, ctx) {
+  const { state } = ctx;
+  const { toast } = ctx.helpers;
+  const card = el('section', 'set-card');
+  card.innerHTML = `<header class="set-card-head"><h3>Moderation</h3>
+    <p>Approve or reject fan submissions. Approved items become visible to everyone.</p></header>
+    <div id="mod-body"></div>`;
+  pane.appendChild(card);
+  const body = card.querySelector('#mod-body');
+
+  if (!supabase) {
+    body.innerHTML = `<p class="modal-text">Moderation needs the cloud backend. Until Supabase is
+      connected, fan submissions stay on each fan's own device, so there's nothing to review.</p>`;
+    return;
+  }
+
+  const placeTitle = (id) =>
+    state.places.features.find((f) => f.properties.id === id)?.properties.title || id;
+
+  const load = async () => {
+    body.innerHTML = '<p class="modal-text dim">Loading pending submissions…</p>';
+    const { data, error } = await supabase
+      .from('memories')
+      .select('id, place_id, kind, body, photo_url, link_url, created_at')
+      .eq('approved', false).order('created_at', { ascending: true }).limit(100);
+    if (error) { body.innerHTML = `<p class="modal-text">Couldn't load the queue: ${escHtml(error.message)}</p>`; return; }
+    if (!data.length) { body.innerHTML = '<p class="modal-text dim">Queue is clear — nothing awaiting review. 🎉</p>'; return; }
+    body.innerHTML = `
+      <p class="modal-text dim">${data.length} submission${data.length > 1 ? 's' : ''} awaiting review.</p>
+      <div class="memories-list">
+        ${data.map((m) => `
+          <article class="memory" data-id="${m.id}">
+            <span class="memory-kind">${escHtml(m.kind || 'memory')} · ${escHtml(placeTitle(m.place_id))} · ${new Date(m.created_at).toLocaleDateString()}</span>
+            ${m.body ? `<p>${escHtml(m.body)}</p>` : ''}
+            ${m.photo_url ? `<img src="${escAttr(m.photo_url)}" alt="" loading="lazy">` : ''}
+            ${m.link_url ? `<a href="${escAttr(m.link_url)}" target="_blank" rel="noopener">${escHtml(m.link_url)}</a>` : ''}
+            <div class="sheet-actions" style="margin-top:10px">
+              <button class="btn" data-reject>Reject</button>
+              <button class="btn btn-primary" data-approve>Approve</button>
+            </div>
+          </article>`).join('')}
+      </div>`;
+    for (const c of body.querySelectorAll('.memory')) {
+      const id = c.dataset.id;
+      c.querySelector('[data-approve]').addEventListener('click', async () => {
+        const { error: err } = await supabase.from('memories').update({ approved: true }).eq('id', id);
+        toast(err ? `Approve failed: ${err.message}` : 'Approved — now public');
+        if (!err) c.remove();
+      });
+      c.querySelector('[data-reject]').addEventListener('click', async () => {
+        const { error: err } = await supabase.from('memories').delete().eq('id', id);
+        toast(err ? `Reject failed: ${err.message}` : 'Rejected and removed');
+        if (!err) c.remove();
+      });
+    }
+  };
+  load();
+}
+
+/* ===================== Console shell ===================== */
+
+const SECTIONS = [
+  { group: 'Setup', items: [
+    { id: 'overview', icon: '◎', label: 'Overview', render: renderOverview },
+    { id: 'identity', icon: '✺', label: 'Identity & look', render: renderIdentity },
+    { id: 'categories', icon: '❖', label: 'Categories', render: renderCategories },
+  ] },
+  { group: 'Content', items: [
+    { id: 'places', icon: '⌖', label: 'Places', render: renderPlaces },
+    { id: 'trips', icon: '❯', label: 'Trips', render: renderTrips },
+  ] },
+  { group: 'Data sources', items: [
+    { id: 'albums', icon: '♪', label: 'Albums', render: renderAlbums },
+    { id: 'concerts', icon: '▲', label: 'Concerts', render: renderConcerts },
+    { id: 'audience', icon: '◵', label: 'Audience map', render: renderAudience },
+    { id: 'moderate', icon: '⚑', label: 'Moderation', render: renderModeration },
+  ] },
+];
+const ALL_SECTIONS = SECTIONS.flatMap((g) => g.items);
+
+export function renderAdmin(container, state, helpers) {
+  const role = getRole();
+  if (!role || role === 'fan') {
+    container.innerHTML = `
+      <div class="admin-denied">
+        <h2>No admin access</h2>
+        <p class="modal-text">Your account doesn't have admin or editor rights for
+        ${escHtml(state.band.name)}. Ask the atlas owner to upgrade your role.</p>
+        <button class="btn btn-primary" data-back>← Back to atlas</button>
+      </div>`;
+    container.querySelector('[data-back]').addEventListener('click', helpers.onClose);
+    return;
+  }
+
+  const theme = state.band.themes[state.mode] || state.band.themes.dark;
+  let current = 'overview';
+
+  container.innerHTML = `
+    <div class="admin-shell">
+      <header class="admin-topbar">
+        <button class="admin-back" data-back aria-label="Back to atlas">← Atlas</button>
+        <div class="admin-brand">
+          <span class="admin-mark" style="background:linear-gradient(135deg, ${theme.accent}, ${theme.accent2})"></span>
+          <div class="admin-brand-text"><strong>${escHtml(state.band.name)}</strong><span>Admin console</span></div>
+        </div>
+        <span class="admin-status" id="admin-status" data-state="idle"></span>
+        <span class="role-pill admin-role">${role === 'local-admin' ? 'local preview' : escHtml(role)}</span>
+      </header>
+      <div class="admin-main">
+        <nav class="admin-nav" aria-label="Admin sections">
+          ${SECTIONS.map((g) => `
+            <div class="admin-nav-group">${escHtml(g.group)}</div>
+            ${g.items.map((s) => `
+              <button class="admin-nav-item" data-section="${s.id}">
+                <span class="admin-nav-icon">${s.icon}</span>${escHtml(s.label)}
+              </button>`).join('')}`).join('')}
+        </nav>
+        <div class="admin-pane" id="admin-pane"></div>
+      </div>
+    </div>`;
+
+  const pane = container.querySelector('#admin-pane');
+  const status = container.querySelector('#admin-status');
+  const ctx = { state, role, helpers };
+  ctx.setStatus = (s) => {
+    status.dataset.state = s;
+    status.textContent = s === 'saving' ? 'Saving…' : s === 'saved' ? 'Saved ✓' : s === 'error' ? 'Save failed' : '';
+    if (s === 'saved') setTimeout(() => {
+      if (status.dataset.state === 'saved') { status.dataset.state = 'idle'; status.textContent = ''; }
+    }, 2200);
+  };
+  const renderCurrent = () => {
+    for (const b of container.querySelectorAll('.admin-nav-item')) {
+      b.classList.toggle('admin-nav-item--on', b.dataset.section === current);
+    }
+    pane.scrollTop = 0;
+    pane.innerHTML = '';
+    ALL_SECTIONS.find((s) => s.id === current)?.render(pane, ctx);
+  };
+  ctx.go = (id) => { current = id; renderCurrent(); pane.scrollTo?.({ top: 0 }); };
+
+  for (const b of container.querySelectorAll('.admin-nav-item')) {
+    b.addEventListener('click', () => ctx.go(b.dataset.section));
+  }
+  container.querySelector('[data-back]').addEventListener('click', helpers.onClose);
+  renderCurrent();
 }

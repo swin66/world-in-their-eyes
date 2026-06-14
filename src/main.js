@@ -16,7 +16,8 @@ import { getLang, getLangs, getSupportedLangs, setLang, t, tf } from './i18n.js'
 import { speak, stopSpeaking, isSpeaking, clearCache, getVoiceForLang, setVoiceForLang, getAutoplay, setAutoplay, fetchVoices } from './tts.js';
 import { initGalaxy } from './galaxy.js';
 import { showSelector } from './selector.js';
-import { addChoropleth } from './choropleth.js';
+import { addChoropleth, removeChoropleth } from './choropleth.js';
+import './admin.css';
 
 const ELEVENLABS_KEY = import.meta.env.VITE_ELEVENLABS_KEY || '';
 
@@ -141,6 +142,15 @@ function mapCollection() {
 
 function refreshMapData() {
   state.map?.getSource('places')?.setData(mapCollection());
+}
+
+// Re-tint the globe after the admin edits the audience map (or it falls back
+// to place density). Tears down and rebuilds the choropleth layers.
+async function refreshChoropleth() {
+  const map = state.map;
+  if (!map) return;
+  removeChoropleth(map);
+  await addChoropleth(map, state.band, state.places.features, currentTheme().accent);
 }
 
 /* ---------- Map layers (WebGL — markers move with the map) ---------- */
@@ -1328,11 +1338,40 @@ function openAccount() {
   openModal((card, close) => {
     renderAuthModal(card, state.band, {
       onClose: close,
-      onAdmin: () => openModal((c, cl) => renderAdmin(c, state, {
-        onClose: cl, toast, setMode, refreshData: refreshMapData,
-      })),
+      onAdmin: () => { close(); location.hash = 'admin'; },
     }).then(() => injectFanLevel(card));
   });
+}
+
+/* ---------- Admin console (full-screen, hash-routed at #admin) ---------- */
+
+function openAdminConsole() {
+  const el = $('admin-console');
+  if (!el) return;
+  renderAdmin(el, state, {
+    onClose: () => { if (location.hash === '#admin') history.back(); else closeAdminConsole(); },
+    toast,
+    setMode,
+    refreshHeader: () => applyTheme(state.band, state.mode),
+    refreshData: refreshMapData,
+    refreshChoropleth,
+    rebuildFilters: buildFilters,
+  });
+  el.hidden = false;
+  document.body.classList.add('admin-active');
+}
+
+function closeAdminConsole() {
+  const el = $('admin-console');
+  if (!el || el.hidden) return;
+  el.hidden = true;
+  el.innerHTML = '';
+  document.body.classList.remove('admin-active');
+}
+
+function syncAdminRoute() {
+  if (location.hash === '#admin') openAdminConsole();
+  else closeAdminConsole();
 }
 
 /* ---------- Fan level (profile) + level-tuned trivia ---------- */
@@ -1506,9 +1545,13 @@ async function init(slug) {
   bindSheetSwipe();
   $('trip-info').addEventListener('click', () => goToStop(state.trip.index));
 
-  // Deep link: /#place-id opens that place
+  // Admin console opens/closes with the #admin hash (browser-back returns here).
+  window.addEventListener('hashchange', syncAdminRoute);
+  if (location.hash === '#admin') syncAdminRoute();
+
+  // Deep link: /#place-id opens that place (ignore the reserved #admin hash)
   const hashId = location.hash.slice(1);
-  if (hashId) {
+  if (hashId && hashId !== 'admin') {
     const feature = places.features.find((f) => f.properties.id === hashId);
     if (feature) map.once('load', () => openSheet(feature));
   }
