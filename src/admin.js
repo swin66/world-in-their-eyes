@@ -453,21 +453,29 @@ async function mbFindArtist(name) {
   return res.artists?.[0] ?? null;
 }
 
-async function persistPlaces(places, bandSlug, supabaseClient, role, download, toast) {
+async function persistPlaces(places, bandSlug, supabaseClient, role, downloadFn, toast) {
+  console.log('[persistPlaces] role:', role, 'supabase:', !!supabaseClient, 'places:', places.length);
   if (supabaseClient && (role === 'admin' || role === 'editor')) {
-    const { error } = await supabaseClient.from('places').upsert(
-      places.map((f) => ({
-        id: f.properties.id, band_slug: bandSlug,
-        title: f.properties.title, category: f.properties.category,
-        year: f.properties.year, summary: f.properties.summary,
-        story: f.properties.story,
-        lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1],
-        approx: true,
-      })),
-    );
-    toast(error ? `Import failed: ${error.message}` : `${places.length} draft places saved — reload the map to see them`);
+    const rows = places.map((f) => ({
+      id: f.properties.id, band_slug: bandSlug,
+      title: f.properties.title, category: f.properties.category,
+      year: f.properties.year, summary: f.properties.summary,
+      story: f.properties.story,
+      lng: f.geometry.coordinates[0], lat: f.geometry.coordinates[1],
+      approx: true,
+    }));
+    console.log('[persistPlaces] upserting to Supabase:', rows.length, 'rows');
+    const { error } = await supabaseClient.from('places').upsert(rows);
+    console.log('[persistPlaces] result error:', error);
+    if (error) {
+      toast(`Import failed: ${error.message}`);
+      alert(`Import failed: ${error.message}\n\nCheck the browser console for details.`);
+    } else {
+      toast(`${places.length} draft places saved — reload the map to see them`);
+    }
   } else {
-    download('places-import.json', { type: 'FeatureCollection', features: places });
+    console.log('[persistPlaces] falling back to download (role:', role, ')');
+    downloadFn('places-import.json', { type: 'FeatureCollection', features: places });
     toast(`${places.length} drafts downloaded — merge into places.json and redeploy`);
   }
 }
