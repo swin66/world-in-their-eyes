@@ -42,7 +42,17 @@ let _audio = null;
 let _blobUrl = null;
 
 export function stopSpeaking() {
-  if (_audio) { _audio.pause(); _audio.src = ''; _audio = null; }
+  if (_audio) {
+    // Detach handlers BEFORE clearing src — assigning an empty/removed src
+    // fires the element's own 'error' event, which would otherwise surface as
+    // a spurious "Playback failed" right when a clip finishes normally.
+    _audio.onended = null;
+    _audio.onerror = null;
+    _audio.pause();
+    _audio.removeAttribute('src');
+    _audio.load();
+    _audio = null;
+  }
   if (_blobUrl) { URL.revokeObjectURL(_blobUrl); _blobUrl = null; }
 }
 
