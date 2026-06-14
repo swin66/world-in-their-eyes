@@ -49,23 +49,28 @@ async function loadJSON(url) {
 // otherwise fall back to the static JSON shipped with the site.
 async function loadData(slug) {
   const base = `/data/bands/${slug}`;
-  const [band, placesJson, artistsJson, tripsJson, sideshowsJson] = await Promise.all([
+  const [bandJson, placesJson, artistsJson, tripsJson, sideshowsJson] = await Promise.all([
     loadJSON(`${base}/band.json`),
     loadJSON(`${base}/places.json`),
     loadJSON(`${base}/artists.json`),
     loadJSON(`${base}/trips.json`).catch(() => ({ trips: [] })),
     loadJSON(`${base}/sideshows.json`).catch(() => ({ sideshows: [] })),
   ]);
+  let band = bandJson;
   let places = placesJson;
   let artists = artistsJson.artists;
   let trips = tripsJson.trips || [];
   const sideshows = sideshowsJson.sideshows || [];
   if (supabase) {
-    const [placesRes, artistsRes, tripsRes] = await Promise.all([
-      supabase.from('places').select('*').eq('band_slug', band.slug),
-      supabase.from('artists').select('*').eq('band_slug', band.slug),
-      supabase.from('trips').select('*').eq('band_slug', band.slug).order('position'),
+    const [bandRes, placesRes, artistsRes, tripsRes] = await Promise.all([
+      supabase.from('bands').select('config').eq('slug', bandJson.slug).maybeSingle(),
+      supabase.from('places').select('*').eq('band_slug', bandJson.slug),
+      supabase.from('artists').select('*').eq('band_slug', bandJson.slug),
+      supabase.from('trips').select('*').eq('band_slug', bandJson.slug).order('position'),
     ]);
+    // DB config (edited in the admin console) wins once it's populated; the JSON
+    // file remains the fallback / fresh-clone seed.
+    if (bandRes.data?.config && Object.keys(bandRes.data.config).length) band = bandRes.data.config;
     if (tripsRes.data?.length) trips = tripsRes.data;
     if (placesRes.data?.length) {
       places = {
