@@ -4,6 +4,27 @@
 -- Adds a per-band 'guide' role, lets guides own & price their tours, and
 -- generalises the application queue so people can apply to be a guide too.
 
+-- ─── trips: create if missing (schema.sql may not have been applied) ──────────
+create table if not exists public.trips (
+  id          text primary key,
+  band_slug   text not null,
+  emoji       text,
+  title       text not null,
+  description text,
+  badge       text,
+  stops       jsonb not null default '[]'::jsonb,
+  position    int not null default 0
+);
+alter table public.trips enable row level security;
+
+drop policy if exists "public read trips" on public.trips;
+create policy "public read trips" on public.trips for select using (true);
+
+drop policy if exists "editor write trips" on public.trips;
+create policy "editor write trips" on public.trips for all
+  using (public.app_role() in ('admin','editor'))
+  with check (public.app_role() in ('admin','editor'));
+
 -- ─── band_roles: allow the 'guide' role ───────────────────────────────────────
 alter table public.band_roles drop constraint if exists band_roles_role_check;
 alter table public.band_roles
