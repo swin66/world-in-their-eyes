@@ -10,6 +10,11 @@
 // else downloads an updated band.json to commit (the free-tier workflow).
 import { supabase } from './supabase.js';
 import { getRole } from './auth.js';
+import { isEventCategory } from './categories.js';
+import {
+  getPendingApplications, getBandGuides, countBandGuides,
+  reviewApplication, revokeBandRole, getProfileNames,
+} from './roles.js';
 
 const THEME_KEYS = ['accent', 'accent2', 'bg', 'surface', 'text'];
 
@@ -136,12 +141,16 @@ function renderOverview(pane, ctx) {
     return;
   }
 
-  const places = state.places.features;
+  const all = state.places.features;
+  const places = all.filter((f) => !isEventCategory(f.properties.category));
+  const events = all.filter((f) => isEventCategory(f.properties.category));
   const stats = [
-    { n: places.length, label: 'Places' },
-    { n: state.trips.length, label: 'Trips' },
-    { n: Object.keys(band.categories).length, label: 'Categories' },
-    { n: '—', label: 'Pending reviews', id: 'ov-pending' },
+    { n: places.length, label: 'Places', go: 'places' },
+    { n: events.length, label: 'Events', go: 'events' },
+    { n: state.trips.length, label: 'Trips', go: 'trips' },
+    { n: Object.keys(band.categories).length, label: 'Categories', go: 'categories' },
+    { n: '—', label: 'Tour guides', id: 'ov-guides', go: 'guides' },
+    { n: '—', label: 'Pending reviews', id: 'ov-pending', go: 'moderate' },
   ];
   const checks = [
     { ok: !!band.coverImage, label: 'Cover image set', go: 'identity' },
@@ -155,7 +164,7 @@ function renderOverview(pane, ctx) {
       <header class="set-card-head"><h3>${escHtml(band.name)}</h3>
         <p>Everything that shapes this atlas lives here. Pick a section on the left.</p></header>
       <div class="ov-stats">
-        ${stats.map((s) => `<div class="ov-stat"><strong ${s.id ? `id="${s.id}"` : ''}>${s.n}</strong><span>${s.label}</span></div>`).join('')}
+        ${stats.map((s) => `<button class="ov-stat" ${s.go ? `data-go="${s.go}"` : ''}><strong ${s.id ? `id="${s.id}"` : ''}>${s.n}</strong><span>${s.label}</span></button>`).join('')}
       </div>
     </div>
     <div class="set-card">
@@ -175,8 +184,10 @@ function renderOverview(pane, ctx) {
   if (supabase) {
     supabase.from('memories').select('id', { count: 'exact', head: true }).eq('approved', false)
       .then(({ count }) => { const n = pane.querySelector('#ov-pending'); if (n) n.textContent = count ?? 0; });
+    countBandGuides(band.slug).then((c) => { const n = pane.querySelector('#ov-guides'); if (n) n.textContent = c; });
   } else {
-    const n = pane.querySelector('#ov-pending'); if (n) n.textContent = '0';
+    const p = pane.querySelector('#ov-pending'); if (p) p.textContent = '0';
+    const g = pane.querySelector('#ov-guides'); if (g) g.textContent = '0';
   }
 }
 
@@ -311,125 +322,160 @@ function renderCategories(pane, ctx) {
   pane.appendChild(card);
 }
 
-/* ===================== Section: Places (re-housed) ===================== */
+/* ===================== Sections: Places & Events ===================== */
 
-function renderPlaces(pane, ctx) {
-  const { state, role } = ctx;
-  const { toast, refreshData } = ctx.helpers;
-  const places = state.places.features;
-  let editing = null;
+// Places and events share one feature collection (state.places.features); the
+// category decides which table a row belongs to (see categories.js). This single
+// manager backs both admin sections — `events` flips the filter and save target.
+function makeFeatureManager({ kind, title, blurb, fileName }) {
+  const isEvent = kind === 'event';
+  return function renderFeatureManager(pane, ctx) {
+    const { state, role } = ctx;
+    const { toast, refreshData } = ctx.helpers;
+    const all = state.places.features;
+    const inSection = (f) => isEventCategory(f.properties.category) === isEvent;
+    const mine = () => all.filter(inSection);
+    let editing = null;
 
-  const card = el('section', 'set-card');
-  card.innerHTML = `
-    <header class="set-card-head"><h3>Places</h3>
-      <p>Edit any pin — its story, category, year and exact spot. Search to find one fast.</p></header>
-    <div class="admin-row">
-      <input type="text" id="place-search" placeholder="Search ${places.length} places…">
-      <button class="btn" id="places-download" style="flex:0 0 auto">Download places.json</button>
-    </div>
-    <div class="import-list" id="place-list"></div>
-    <div id="place-editor"></div>`;
-  pane.appendChild(card);
+    const card = el('section', 'set-card');
+    card.innerHTML = `
+      <header class="set-card-head"><h3>${escHtml(title)}</h3><p>${escHtml(blurb)}</p></header>
+      <div class="admin-row">
+        <input type="text" id="fm-search" placeholder="Search ${mine().length} ${kind}s…">
+        <button class="btn" id="fm-download" style="flex:0 0 auto">Download ${fileName}</button>
+      </div>
+      <div class="import-list" id="fm-list"></div>
+      <div id="fm-editor"></div>`;
+    pane.appendChild(card);
 
-  const persist = async (feature) => {
-    refreshData?.();
-    if (supabase && (role === 'admin' || role === 'editor')) {
+    // Save to the table the *current* category implies; if the category crossed
+    // the place/event boundary, remove the stale row from the other table.
+    const persist = async (feature) => {
+      refreshData?.();
       const p = feature.properties;
-      const { error } = await supabase.from('places').upsert({
-        id: p.id, band_slug: state.band.slug, title: p.title, category: p.category,
-        year: p.year, summary: p.summary, story: p.story,
-        lng: feature.geometry.coordinates[0], lat: feature.geometry.coordinates[1],
-        approx: Boolean(p.approx), artist_id: p.artistId || null,
-      });
-      toast(error ? `Save failed: ${error.message}` : 'Saved for everyone');
-    } else {
-      toast('Applied locally — use “Download places.json” to keep changes');
-    }
-  };
-
-  const renderList = () => {
-    const q = card.querySelector('#place-search')?.value?.toLowerCase() || '';
-    const list = card.querySelector('#place-list');
-    list.innerHTML = places
-      .filter((f) => f.properties.title.toLowerCase().includes(q))
-      .sort((a, b) => a.properties.year - b.properties.year)
-      .map((f) => `<label data-id="${f.properties.id}" style="cursor:pointer">
-          ${escHtml(f.properties.title)}<span class="import-year">${f.properties.year}</span></label>`)
-      .join('');
-    for (const row of list.querySelectorAll('label')) {
-      row.addEventListener('click', () => {
-        editing = places.find((f) => f.properties.id === row.dataset.id);
-        renderEditor();
-      });
-    }
-  };
-
-  const renderEditor = () => {
-    const f = editing;
-    const p = f.properties;
-    const editor = card.querySelector('#place-editor');
-    const others = places.filter((x) => x.properties.id !== p.id);
-    editor.innerHTML = `
-      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
-      <div class="admin-row"><span style="min-width:62px">Title</span>
-        <input type="text" id="pe-title" value="${escAttr(p.title)}"></div>
-      <div class="admin-row"><span style="min-width:62px">Category</span>
-        <select id="pe-category">${Object.entries(state.band.categories)
-          .map(([k, c]) => `<option value="${k}" ${k === p.category ? 'selected' : ''}>${escHtml(c.label)}</option>`).join('')}
-        </select>
-        <span>Year</span><input type="text" id="pe-year" value="${escAttr(p.year)}" style="flex:0 0 70px"></div>
-      <div class="admin-row"><span style="min-width:62px">Summary</span>
-        <input type="text" id="pe-summary" value="${escAttr(p.summary || '')}"></div>
-      <div class="admin-row"><span style="min-width:62px">Story</span>
-        <textarea id="pe-story" rows="4" style="flex:1;background:color-mix(in srgb, var(--text) 7%, transparent);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--text);font:inherit;font-size:13px">${escHtml(p.story || '')}</textarea></div>
-      <div class="admin-row"><span style="min-width:62px">Lng / Lat</span>
-        <input type="text" id="pe-lng" value="${f.geometry.coordinates[0]}">
-        <input type="text" id="pe-lat" value="${f.geometry.coordinates[1]}"></div>
-      <div class="admin-row"><span style="min-width:62px">Group with</span>
-        <select id="pe-group">
-          <option value="">— keep own location —</option>
-          ${others.map((x) => `<option value="${x.properties.id}">${escHtml(x.properties.title)} (${x.properties.year})</option>`).join('')}
-        </select></div>
-      <p class="modal-text dim">“Group with” snaps this item to another place's exact spot,
-      so they cluster into one hotspot that opens as a story wall.</p>
-      <div class="sheet-actions">
-        <button class="btn" id="pe-center">Use map centre</button>
-        <button class="btn btn-primary" id="pe-save">Save place</button>
-      </div>`;
-    editor.querySelector('#pe-center').addEventListener('click', () => {
-      const c = state.map.getCenter();
-      editor.querySelector('#pe-lng').value = c.lng.toFixed(5);
-      editor.querySelector('#pe-lat').value = c.lat.toFixed(5);
-    });
-    editor.querySelector('#pe-group').addEventListener('change', (e) => {
-      const target = places.find((x) => x.properties.id === e.target.value);
-      if (target) {
-        editor.querySelector('#pe-lng').value = target.geometry.coordinates[0];
-        editor.querySelector('#pe-lat').value = target.geometry.coordinates[1];
+      if (supabase && (role === 'admin' || role === 'editor')) {
+        const table = isEventCategory(p.category) ? 'events' : 'places';
+        const other = table === 'events' ? 'places' : 'events';
+        const row = {
+          id: p.id, band_slug: state.band.slug, title: p.title, category: p.category,
+          year: p.year, summary: p.summary, story: p.story,
+          lng: feature.geometry.coordinates[0], lat: feature.geometry.coordinates[1],
+          approx: Boolean(p.approx), artist_id: p.artistId || null,
+        };
+        // event_date only exists on the events table.
+        if (table === 'events') row.event_date = p.date || null;
+        const { error } = await supabase.from(table).upsert(row);
+        if (!error && table !== (isEvent ? 'events' : 'places')) {
+          await supabase.from(other).delete().eq('id', p.id);
+        }
+        toast(error ? `Save failed: ${error.message}` : 'Saved for everyone');
+      } else {
+        toast(`Applied locally — use “Download ${fileName}” to keep changes`);
       }
-    });
-    editor.querySelector('#pe-save').addEventListener('click', () => {
-      p.title = editor.querySelector('#pe-title').value;
-      p.category = editor.querySelector('#pe-category').value;
-      p.year = Number(editor.querySelector('#pe-year').value) || p.year;
-      p.summary = editor.querySelector('#pe-summary').value;
-      p.story = editor.querySelector('#pe-story').value;
-      f.geometry.coordinates = [
-        Number(editor.querySelector('#pe-lng').value),
-        Number(editor.querySelector('#pe-lat').value),
-      ];
-      persist(f);
-      renderList();
-    });
-  };
+    };
 
-  card.querySelector('#place-search').addEventListener('input', renderList);
-  card.querySelector('#places-download').addEventListener('click', () => {
-    download('places.json', state.places);
-    toast('places.json downloaded — replace public/data and deploy');
-  });
-  renderList();
+    const renderList = () => {
+      const q = card.querySelector('#fm-search')?.value?.toLowerCase() || '';
+      const list = card.querySelector('#fm-list');
+      list.innerHTML = mine()
+        .filter((f) => f.properties.title.toLowerCase().includes(q))
+        .sort((a, b) => a.properties.year - b.properties.year)
+        .map((f) => `<label data-id="${f.properties.id}" style="cursor:pointer">
+            ${escHtml(f.properties.title)}<span class="import-year">${f.properties.year}</span></label>`)
+        .join('');
+      for (const row of list.querySelectorAll('label')) {
+        row.addEventListener('click', () => {
+          editing = all.find((f) => f.properties.id === row.dataset.id);
+          renderEditor();
+        });
+      }
+    };
+
+    const renderEditor = () => {
+      const f = editing;
+      const p = f.properties;
+      const editor = card.querySelector('#fm-editor');
+      const others = all.filter((x) => x.properties.id !== p.id);
+      // Offer this section's categories first, but list all so a row can be
+      // re-classified across the place/event boundary if it was misfiled.
+      const catEntries = Object.entries(state.band.categories)
+        .sort(([a], [b]) => (isEventCategory(b) === isEvent) - (isEventCategory(a) === isEvent));
+      editor.innerHTML = `
+        <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+        <div class="admin-row"><span style="min-width:62px">Title</span>
+          <input type="text" id="pe-title" value="${escAttr(p.title)}"></div>
+        <div class="admin-row"><span style="min-width:62px">Category</span>
+          <select id="pe-category">${catEntries
+            .map(([k, c]) => `<option value="${k}" ${k === p.category ? 'selected' : ''}>${escHtml(c.label)}</option>`).join('')}
+          </select>
+          <span>Year</span><input type="text" id="pe-year" value="${escAttr(p.year)}" style="flex:0 0 70px"></div>
+        ${isEvent ? `<div class="admin-row"><span style="min-width:62px">Date</span>
+          <input type="date" id="pe-date" value="${escAttr(p.date || '')}">
+          <span class="dim" style="font-size:12px">exact day, if known</span></div>` : ''}
+        <div class="admin-row"><span style="min-width:62px">Summary</span>
+          <input type="text" id="pe-summary" value="${escAttr(p.summary || '')}"></div>
+        <div class="admin-row"><span style="min-width:62px">Story</span>
+          <textarea id="pe-story" rows="4" style="flex:1;background:color-mix(in srgb, var(--text) 7%, transparent);border:1px solid var(--line);border-radius:10px;padding:9px 12px;color:var(--text);font:inherit;font-size:13px">${escHtml(p.story || '')}</textarea></div>
+        <div class="admin-row"><span style="min-width:62px">Lng / Lat</span>
+          <input type="text" id="pe-lng" value="${f.geometry.coordinates[0]}">
+          <input type="text" id="pe-lat" value="${f.geometry.coordinates[1]}"></div>
+        <div class="admin-row"><span style="min-width:62px">Group with</span>
+          <select id="pe-group">
+            <option value="">— keep own location —</option>
+            ${others.map((x) => `<option value="${x.properties.id}">${escHtml(x.properties.title)} (${x.properties.year})</option>`).join('')}
+          </select></div>
+        <p class="modal-text dim">“Group with” snaps this item to another item's exact spot,
+        so they cluster into one hotspot that opens as a story wall.</p>
+        <div class="sheet-actions">
+          <button class="btn" id="pe-center">Use map centre</button>
+          <button class="btn btn-primary" id="pe-save">Save ${kind}</button>
+        </div>`;
+      editor.querySelector('#pe-center').addEventListener('click', () => {
+        const c = state.map.getCenter();
+        editor.querySelector('#pe-lng').value = c.lng.toFixed(5);
+        editor.querySelector('#pe-lat').value = c.lat.toFixed(5);
+      });
+      editor.querySelector('#pe-group').addEventListener('change', (e) => {
+        const target = all.find((x) => x.properties.id === e.target.value);
+        if (target) {
+          editor.querySelector('#pe-lng').value = target.geometry.coordinates[0];
+          editor.querySelector('#pe-lat').value = target.geometry.coordinates[1];
+        }
+      });
+      editor.querySelector('#pe-save').addEventListener('click', () => {
+        p.title = editor.querySelector('#pe-title').value;
+        p.category = editor.querySelector('#pe-category').value;
+        p.year = Number(editor.querySelector('#pe-year').value) || p.year;
+        const dateEl = editor.querySelector('#pe-date');
+        if (dateEl) p.date = dateEl.value || undefined;
+        p.summary = editor.querySelector('#pe-summary').value;
+        p.story = editor.querySelector('#pe-story').value;
+        f.geometry.coordinates = [
+          Number(editor.querySelector('#pe-lng').value),
+          Number(editor.querySelector('#pe-lat').value),
+        ];
+        persist(f);
+        renderList();
+      });
+    };
+
+    card.querySelector('#fm-search').addEventListener('input', renderList);
+    card.querySelector('#fm-download').addEventListener('click', () => {
+      download(fileName, { type: 'FeatureCollection', features: mine() });
+      toast(`${fileName} downloaded — replace public/data and deploy`);
+    });
+    renderList();
+  };
 }
+
+const renderPlaces = makeFeatureManager({
+  kind: 'place', title: 'Places', fileName: 'places.json',
+  blurb: 'Physical, ongoing locations — studios, homes, origins. Search to find one fast.',
+});
+const renderEvents = makeFeatureManager({
+  kind: 'event', title: 'Events', fileName: 'events.json',
+  blurb: 'Time-anchored happenings — gigs, releases, milestones, video shoots.',
+});
 
 /* ===================== Section: Trips (re-housed) ===================== */
 
@@ -1026,6 +1072,94 @@ function renderModeration(pane, ctx) {
   load();
 }
 
+/* ===================== Section: Tour guides ===================== */
+
+function renderGuides(pane, ctx) {
+  const { state } = ctx;
+  const { toast } = ctx.helpers;
+  const slug = state.band.slug;
+  const reviewerId = ctx.user?.id;
+  let names = {};
+  const nameFor = (id) => names[id] || (id ? `${id.slice(0, 8)}…` : 'unknown');
+
+  const card = el('section', 'set-card');
+  card.innerHTML = `<header class="set-card-head"><h3>Tour guides</h3>
+    <p>Approve fans applying to guide ${escHtml(state.band.name)}, and manage who currently holds the role.</p></header>
+    <div id="guides-pending"></div>
+    <div id="guides-current" style="margin-top:18px"></div>`;
+  pane.appendChild(card);
+  const pendingBox = card.querySelector('#guides-pending');
+  const currentBox = card.querySelector('#guides-current');
+
+  if (!supabase) {
+    pendingBox.innerHTML = `<p class="modal-text">Guide approvals need the cloud backend.</p>`;
+    return;
+  }
+
+  const load = async () => {
+    pendingBox.innerHTML = '<p class="modal-text dim">Loading applications…</p>';
+    currentBox.innerHTML = '';
+    const [apps, guides] = await Promise.all([getPendingApplications(slug), getBandGuides(slug)]);
+    names = await getProfileNames([...apps.map((a) => a.user_id), ...guides.map((g) => g.user_id)]);
+
+    // ── Pending applications ──
+    if (!apps.length) {
+      pendingBox.innerHTML = '<p class="modal-text dim">No applications waiting for review. 🎉</p>';
+    } else {
+      pendingBox.innerHTML = `
+        <h4 class="set-sub">Pending applications (${apps.length})</h4>
+        <div class="memories-list">
+          ${apps.map((a) => `
+            <article class="memory" data-id="${escAttr(a.id)}">
+              <span class="memory-kind">${escHtml(a.requested_role === 'guide' ? '🎫 Tour guide' : '★ Band rep')} · ${escHtml(nameFor(a.user_id))} · ${new Date(a.created_at).toLocaleDateString()}</span>
+              ${a.justification ? `<p>${escHtml(a.justification)}</p>` : ''}
+              <div class="sheet-actions" style="margin-top:10px">
+                <button class="btn" data-reject>Reject</button>
+                <button class="btn btn-primary" data-approve>Approve</button>
+              </div>
+            </article>`).join('')}
+        </div>`;
+      for (const c of pendingBox.querySelectorAll('.memory')) {
+        const id = c.dataset.id;
+        const decide = async (decision) => {
+          const { error } = await reviewApplication(id, decision, reviewerId);
+          if (error) { toast(`Failed: ${error}`); return; }
+          toast(decision === 'approved' ? 'Approved — role granted' : 'Application rejected');
+          load();
+        };
+        c.querySelector('[data-approve]').addEventListener('click', () => decide('approved'));
+        c.querySelector('[data-reject]').addEventListener('click', () => decide('rejected'));
+      }
+    }
+
+    // ── Current guides ──
+    if (!guides.length) {
+      currentBox.innerHTML = '<h4 class="set-sub">Current guides</h4><p class="modal-text dim">No tour guides yet.</p>';
+    } else {
+      currentBox.innerHTML = `
+        <h4 class="set-sub">Current guides (${guides.length})</h4>
+        <div class="memories-list">
+          ${guides.map((g) => `
+            <article class="memory" data-uid="${escAttr(g.user_id)}">
+              <span class="memory-kind">🎫 ${escHtml(nameFor(g.user_id))} · since ${new Date(g.granted_at).toLocaleDateString()}</span>
+              <div class="sheet-actions" style="margin-top:10px">
+                <button class="btn" data-revoke>Remove guide</button>
+              </div>
+            </article>`).join('')}
+        </div>`;
+      for (const c of currentBox.querySelectorAll('.memory')) {
+        c.querySelector('[data-revoke]').addEventListener('click', async () => {
+          const { error } = await revokeBandRole(c.dataset.uid, slug, 'guide');
+          if (error) { toast(`Remove failed: ${error}`); return; }
+          toast('Guide role removed');
+          load();
+        });
+      }
+    }
+  };
+  load();
+}
+
 /* ===================== Section: Payouts (placeholder) ===================== */
 
 function renderPayouts(pane, ctx) {
@@ -1058,6 +1192,7 @@ const SECTIONS = [
   ] },
   { group: 'Content', items: [
     { id: 'places', icon: '⌖', label: 'Places', render: renderPlaces },
+    { id: 'events', icon: '◷', label: 'Events', render: renderEvents },
     { id: 'trips', icon: '❯', label: 'Trips', render: renderTrips },
   ] },
   { group: 'Data sources', items: [
@@ -1065,6 +1200,9 @@ const SECTIONS = [
     { id: 'concerts', icon: '▲', label: 'Concerts', render: renderConcerts },
     { id: 'audience', icon: '◵', label: 'Audience map', render: renderAudience },
     { id: 'moderate', icon: '⚑', label: 'Moderation', render: renderModeration },
+  ] },
+  { group: 'People', items: [
+    { id: 'guides', icon: '🎫', label: 'Tour guides', render: renderGuides },
   ] },
 ];
 // Guides get a focused console: their tours + payouts.

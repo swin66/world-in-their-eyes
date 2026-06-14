@@ -34,6 +34,13 @@ language sql stable security definer set search_path = public as $$
     'fan'
   )
 $$;
+-- Used inside RLS policies, so the *calling* role (authenticated/anon) must hold
+-- EXECUTE even though the body runs as the definer. Revoking from public breaks
+-- every policy that references it ("permission denied for function app_role").
+-- Keep it locked down from PUBLIC but grant the API roles explicitly.
+revoke execute on function public.app_role() from public;
+grant  execute on function public.app_role() to authenticated, anon;
+revoke execute on function public.handle_new_user() from public;
 
 -- ─── band_roles ────────────────────────────────────────────────────────────────
 create table if not exists public.band_roles (
@@ -65,6 +72,8 @@ language sql stable security definer set search_path = public as $$
     where user_id = auth.uid() and band_slug = slug and role = want
   );
 $$;
+revoke execute on function public.has_band_role(text, text) from public;
+grant  execute on function public.has_band_role(text, text) to authenticated, anon;
 
 drop policy if exists "band_rep manages mods" on public.band_roles;
 create policy "band_rep manages mods"
