@@ -1182,6 +1182,99 @@ function renderPayouts(pane, ctx) {
   pane.appendChild(card);
 }
 
+/* ===================== Section: Backup & import (sysadmin) ===================== */
+
+// Content tables we can round-trip via the API (admin RLS allows read + write).
+const BACKUP_TABLES = ['artists', 'places', 'events', 'trips'];
+
+function renderBackup(pane, ctx) {
+  const { state, role } = ctx;
+  const { toast } = ctx.helpers;
+  const slug = state.band.slug;
+  const isSysadmin = role === 'admin' || role === 'local-admin';
+
+  const card = el('section', 'set-card');
+  card.innerHTML = `
+    <header class="set-card-head"><h3>Backup &amp; import</h3>
+      <p>Download a full JSON snapshot of this band's data, or import one you've
+      edited offline. System-admin only.</p></header>
+    <div id="backup-body"></div>`;
+  pane.appendChild(card);
+  const body = card.querySelector('#backup-body');
+
+  if (!supabase) {
+    body.innerHTML = `<p class="modal-text">Backup &amp; import need the cloud backend.</p>`;
+    return;
+  }
+  if (!isSysadmin) {
+    body.innerHTML = `<p class="modal-text">This section is restricted to system administrators.</p>`;
+    return;
+  }
+
+  body.innerHTML = `
+    <div class="sheet-actions" style="flex-wrap:wrap">
+      <button class="btn btn-primary" id="backup-export">⬇ Download backup (JSON)</button>
+      <label class="btn" style="cursor:pointer">⬆ Import from JSON
+        <input type="file" id="backup-import" accept="application/json,.json" hidden>
+      </label>
+    </div>
+    <p class="modal-text dim" style="margin-top:12px">Backup includes the band config plus
+      ${BACKUP_TABLES.join(', ')}. Import <strong>merges</strong> rows by id (it never deletes),
+      so it's safe to re-run. Take a fresh backup before importing.</p>
+    <div id="backup-log" class="modal-text" style="margin-top:10px"></div>`;
+  const log = body.querySelector('#backup-log');
+
+  // ── Export ──
+  body.querySelector('#backup-export').addEventListener('click', async () => {
+    log.textContent = 'Gathering data…';
+    const out = {
+      format: 'wite-backup', version: 1,
+      exported_at: new Date().toISOString(), band_slug: slug,
+    };
+    const band = await supabase.from('bands').select('*').eq('slug', slug).maybeSingle();
+    out.bands = band.data ? [band.data] : [];
+    for (const t of BACKUP_TABLES) {
+      const { data, error } = await supabase.from(t).select('*').eq('band_slug', slug);
+      if (error) { log.textContent = `Export failed on ${t}: ${error.message}`; return; }
+      out[t] = data || [];
+    }
+    const stamp = new Date().toISOString().slice(0, 10);
+    download(`backup-${slug}-${stamp}.json`, out);
+    const counts = BACKUP_TABLES.map((t) => `${out[t].length} ${t}`).join(', ');
+    log.textContent = `Downloaded: ${counts}.`;
+    toast('Backup downloaded');
+  });
+
+  // ── Import ──
+  body.querySelector('#backup-import').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-importing the same file later
+    if (!file) return;
+    let data;
+    try { data = JSON.parse(await file.text()); }
+    catch { log.textContent = 'That file isn’t valid JSON.'; return; }
+    if (data.format !== 'wite-backup') {
+      log.textContent = 'Unrecognised file — expected a wite-backup JSON export.';
+      return;
+    }
+    const tableCounts = ['bands', ...BACKUP_TABLES]
+      .map((t) => `${(data[t] || []).length} ${t}`).join(', ');
+    if (!window.confirm(`Import and merge ${tableCounts}? Existing rows with the same id will be overwritten.`)) return;
+
+    log.textContent = 'Importing…';
+    const results = [];
+    for (const t of ['bands', ...BACKUP_TABLES]) {
+      const rows = data[t] || [];
+      if (!rows.length) continue;
+      const { error } = await supabase.from(t).upsert(rows);
+      results.push(error ? `${t}: ✗ ${error.message}` : `${t}: ✓ ${rows.length}`);
+    }
+    log.innerHTML = results.map(escHtml).join('<br>')
+      + '<br><strong>Done.</strong> Reload the atlas to see imported content.';
+    toast('Import finished');
+  });
+}
+
 /* ===================== Console shell ===================== */
 
 const SECTIONS = [
@@ -1203,6 +1296,9 @@ const SECTIONS = [
   ] },
   { group: 'People', items: [
     { id: 'guides', icon: '🎫', label: 'Tour guides', render: renderGuides },
+  ] },
+  { group: 'System', items: [
+    { id: 'backup', icon: '⬇', label: 'Backup & import', render: renderBackup, sysadmin: true },
   ] },
 ];
 // Guides get a focused console: their tours + payouts.
@@ -1228,9 +1324,12 @@ export function renderAdmin(container, state, helpers) {
     return;
   }
 
-  const groups = access === 'guide' ? GUIDE_SECTIONS : SECTIONS;
-  const sections = groups.flatMap((g) => g.items);
   const role = getRole();
+  const isSysadmin = role === 'admin' || role === 'local-admin';
+  const groups = (access === 'guide' ? GUIDE_SECTIONS : SECTIONS)
+    .map((g) => ({ ...g, items: g.items.filter((it) => !it.sysadmin || isSysadmin) }))
+    .filter((g) => g.items.length);
+  const sections = groups.flatMap((g) => g.items);
   const roleLabel = access === 'guide' ? '🎫 Tour Guide'
     : role === 'local-admin' ? 'local preview' : escHtml(role || 'editor');
 
