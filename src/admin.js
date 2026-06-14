@@ -114,6 +114,28 @@ async function saveBand(ctx, msg = 'Saved ✓') {
 function renderOverview(pane, ctx) {
   const { state, helpers } = ctx;
   const band = state.band;
+
+  // Guide-tailored overview: focus on their own tours.
+  if (ctx.access === 'guide') {
+    const uid = ctx.user?.id;
+    const mine = state.trips.filter((t) => uid && t.author_id === uid);
+    const published = mine.filter((t) => t.published).length;
+    const paid = mine.filter((t) => (t.price_cents || 0) > 0).length;
+    pane.innerHTML = `
+      <div class="set-card">
+        <header class="set-card-head"><h3>Welcome, tour guide 🎫</h3>
+          <p>Craft guided tours of ${escHtml(band.name)}'s world — expert routes and insider stories.</p></header>
+        <div class="ov-stats">
+          <div class="ov-stat"><strong>${mine.length}</strong><span>Your tours</span></div>
+          <div class="ov-stat"><strong>${published}</strong><span>Published</span></div>
+          <div class="ov-stat"><strong>${paid}</strong><span>Priced</span></div>
+        </div>
+        <div class="set-card-actions"><button class="btn btn-primary" data-go="trips">＋ Build a tour</button></div>
+      </div>`;
+    pane.querySelector('[data-go]').addEventListener('click', () => ctx.go('trips'));
+    return;
+  }
+
   const places = state.places.features;
   const stats = [
     { n: places.length, label: 'Places' },
@@ -414,28 +436,37 @@ function renderPlaces(pane, ctx) {
 function renderTrips(pane, ctx) {
   const { state, role } = ctx;
   const { toast } = ctx.helpers;
+  const isGuideMode = ctx.access === 'guide';
+  const userId = ctx.user?.id || null;
+  const userName = ctx.user?.user_metadata?.full_name || ctx.user?.email || 'Tour guide';
+  // Guides only see and manage their own tours; full-access sees all.
+  const visibleTrips = () => isGuideMode ? state.trips.filter((t) => userId && t.author_id === userId) : state.trips;
   let editing = null;
 
   const card = el('section', 'set-card');
   card.innerHTML = `
-    <header class="set-card-head"><h3>Trips</h3>
+    <header class="set-card-head"><h3>${isGuideMode ? 'My tours' : 'Trips'}</h3>
       <p>Build custom journeys — an album in order, a tour leg, a member's story. They appear instantly in the 🧭 picker.</p></header>
     <div class="admin-row">
-      <button class="btn" id="trip-new" style="flex:1">＋ New trip</button>
-      <button class="btn" id="trips-download" style="flex:1">Download trips.json</button>
+      <button class="btn" id="trip-new" style="flex:1">＋ ${isGuideMode ? 'New tour' : 'New trip'}</button>
+      ${isGuideMode ? '' : '<button class="btn" id="trips-download" style="flex:1">Download trips.json</button>'}
     </div>
     <div class="import-list" id="trip-admin-list"></div>
     <div id="trip-editor"></div>`;
   pane.appendChild(card);
 
   const persist = async (trip) => {
-    if (supabase && (role === 'admin' || role === 'editor')) {
+    const canDbWrite = supabase && (role === 'admin' || role === 'editor' || isGuideMode);
+    if (canDbWrite) {
       const { error } = await supabase.from('trips').upsert({
         id: trip.id, band_slug: state.band.slug, emoji: trip.emoji, title: trip.title,
         description: trip.description, badge: trip.badge, stops: trip.stops,
         position: state.trips.indexOf(trip),
+        author_id: trip.author_id || null, author_name: trip.author_name || null,
+        price_cents: trip.price_cents || 0, currency: trip.currency || 'GBP',
+        published: Boolean(trip.published),
       });
-      toast(error ? `Save failed: ${error.message}` : 'Trip saved for everyone');
+      toast(error ? `Save failed: ${error.message}` : (trip.published ? 'Tour saved & published' : 'Tour saved'));
     } else {
       download('trips.json', { trips: state.trips });
       toast('trips.json downloaded — replace public/data and deploy');
@@ -479,7 +510,18 @@ function renderTrips(pane, ctx) {
             </span>
           </label>`).join('') || '<p class="modal-text dim">No stops yet — add some above.</p>'}
       </div>
-      <button class="btn btn-primary" id="te-save" style="width:100%">Save trip</button>`;
+      <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+      <div class="admin-row" style="align-items:center">
+        <label class="te-pub"><input type="checkbox" id="te-published" ${t.published ? 'checked' : ''}> Published <span class="set-hint">visible to fans</span></label>
+      </div>
+      <div class="admin-row"><span style="min-width:62px">Price</span>
+        <select id="te-currency" style="flex:0 0 88px">
+          ${['GBP', 'USD', 'EUR'].map((c) => `<option value="${c}" ${(t.currency || 'GBP') === c ? 'selected' : ''}>${c}</option>`).join('')}
+        </select>
+        <input type="number" id="te-price" min="0" step="0.01" value="${((t.price_cents || 0) / 100).toFixed(2)}" placeholder="0.00">
+        <span class="set-hint">0 = free</span></div>
+      <p class="modal-text dim" style="margin-top:0">Paid tours won't charge yet — payouts are coming soon. Set a price now and switch it on later.</p>
+      <button class="btn btn-primary" id="te-save" style="width:100%">Save tour</button>`;
 
     editor.querySelector('#te-add-place').addEventListener('change', (e) => {
       if (!e.target.value) return;
@@ -507,18 +549,30 @@ function renderTrips(pane, ctx) {
       t.title = editor.querySelector('#te-title').value.trim();
       t.description = editor.querySelector('#te-desc').value.trim();
       t.badge = editor.querySelector('#te-badge').value.trim();
-      if (!t.title || t.stops.length < 2) { toast('A trip needs a title and at least 2 stops'); return; }
+      t.published = editor.querySelector('#te-published').checked;
+      t.currency = editor.querySelector('#te-currency').value;
+      t.price_cents = Math.max(0, Math.round((Number(editor.querySelector('#te-price').value) || 0) * 100));
+      if (!t.title || t.stops.length < 2) { toast('A tour needs a title and at least 2 stops'); return; }
       if (!t.id) t.id = slugify(t.title);
+      // Stamp guide authorship on first save (and ensure guides own what they make).
+      if (isGuideMode && !t.author_id) { t.author_id = userId; t.author_name = userName; }
       if (!state.trips.includes(t)) state.trips.push(t);
       persist(t); renderList();
     });
   };
 
+  const priceLabel = (t) => {
+    if (!t.price_cents) return '';
+    const sym = { GBP: '£', USD: '$', EUR: '€' }[t.currency] || '';
+    return ` · ${sym}${(t.price_cents / 100).toFixed(2)}`;
+  };
   const renderList = () => {
     const list = card.querySelector('#trip-admin-list');
-    list.innerHTML = state.trips.map((t) => `
+    const trips = visibleTrips();
+    list.innerHTML = trips.length ? trips.map((t) => `
       <label data-id="${t.id}" style="cursor:pointer">${escHtml(t.emoji)} ${escHtml(t.title)}
-        <span class="import-year">${t.stops.length} stops</span></label>`).join('');
+        <span class="import-year">${t.stops.length} stops${t.published ? '' : ' · draft'}${priceLabel(t)}</span></label>`).join('')
+      : '<p class="modal-text dim">No tours yet — create your first below.</p>';
     for (const row of list.querySelectorAll('label')) {
       row.addEventListener('click', () => {
         editing = state.trips.find((t) => t.id === row.dataset.id); renderEditor();
@@ -527,9 +581,14 @@ function renderTrips(pane, ctx) {
   };
 
   card.querySelector('#trip-new').addEventListener('click', () => {
-    editing = { id: '', emoji: '📍', title: '', description: '', badge: '', stops: [] }; renderEditor();
+    editing = {
+      id: '', emoji: '📍', title: '', description: '', badge: '', stops: [],
+      published: false, price_cents: 0, currency: 'GBP',
+      author_id: isGuideMode ? userId : null, author_name: isGuideMode ? userName : null,
+    };
+    renderEditor();
   });
-  card.querySelector('#trips-download').addEventListener('click', () => {
+  card.querySelector('#trips-download')?.addEventListener('click', () => {
     download('trips.json', { trips: state.trips });
     toast('trips.json downloaded — replace public/data and deploy');
   });
@@ -967,6 +1026,28 @@ function renderModeration(pane, ctx) {
   load();
 }
 
+/* ===================== Section: Payouts (placeholder) ===================== */
+
+function renderPayouts(pane, ctx) {
+  const { state } = ctx;
+  const paid = state.trips.filter((t) => (t.price_cents || 0) > 0);
+  const card = el('section', 'set-card');
+  card.innerHTML = `
+    <header class="set-card-head"><h3>Payouts</h3>
+      <p>Charge for your tours and get paid. This is being built — here's where it'll live.</p></header>
+    <div class="payouts-placeholder">
+      <div class="payouts-badge">£ &nbsp;Coming soon</div>
+      <p class="modal-text">You can already mark a tour as paid and set its price in
+        <strong>My tours</strong>. Once payouts go live you'll connect a payout account here and
+        fans will be able to buy access — your tours stay free to set up in the meantime.</p>
+      <p class="modal-text dim">${paid.length
+        ? `${paid.length} of your tours ${paid.length === 1 ? 'has' : 'have'} a price set and ${paid.length === 1 ? 'is' : 'are'} ready to switch on.`
+        : 'No priced tours yet — set a price on a tour to get ready.'}</p>
+      <button class="btn" disabled>Connect payout account (soon)</button>
+    </div>`;
+  pane.appendChild(card);
+}
+
 /* ===================== Console shell ===================== */
 
 const SECTIONS = [
@@ -986,21 +1067,34 @@ const SECTIONS = [
     { id: 'moderate', icon: '⚑', label: 'Moderation', render: renderModeration },
   ] },
 ];
-const ALL_SECTIONS = SECTIONS.flatMap((g) => g.items);
+// Guides get a focused console: their tours + payouts.
+const GUIDE_SECTIONS = [
+  { group: 'Tours', items: [
+    { id: 'overview', icon: '◎', label: 'Overview', render: renderOverview },
+    { id: 'trips', icon: '❯', label: 'My tours', render: renderTrips },
+    { id: 'payouts', icon: '£', label: 'Payouts', render: renderPayouts },
+  ] },
+];
 
 export function renderAdmin(container, state, helpers) {
-  const role = getRole();
-  if (!role || role === 'fan') {
+  const access = helpers.access || ((getRole() && getRole() !== 'fan') ? 'full' : 'denied');
+  if (access === 'denied') {
     container.innerHTML = `
       <div class="admin-denied">
         <h2>No admin access</h2>
-        <p class="modal-text">Your account doesn't have admin or editor rights for
-        ${escHtml(state.band.name)}. Ask the atlas owner to upgrade your role.</p>
+        <p class="modal-text">Your account doesn't have admin, editor or guide rights for
+        ${escHtml(state.band.name)}. Apply from your account to get involved.</p>
         <button class="btn btn-primary" data-back>← Back to atlas</button>
       </div>`;
     container.querySelector('[data-back]').addEventListener('click', helpers.onClose);
     return;
   }
+
+  const groups = access === 'guide' ? GUIDE_SECTIONS : SECTIONS;
+  const sections = groups.flatMap((g) => g.items);
+  const role = getRole();
+  const roleLabel = access === 'guide' ? '🎫 Tour Guide'
+    : role === 'local-admin' ? 'local preview' : escHtml(role || 'editor');
 
   const theme = state.band.themes[state.mode] || state.band.themes.dark;
   let current = 'overview';
@@ -1011,14 +1105,14 @@ export function renderAdmin(container, state, helpers) {
         <button class="admin-back" data-back aria-label="Back to atlas">← Atlas</button>
         <div class="admin-brand">
           <span class="admin-mark" style="background:linear-gradient(135deg, ${theme.accent}, ${theme.accent2})"></span>
-          <div class="admin-brand-text"><strong>${escHtml(state.band.name)}</strong><span>Admin console</span></div>
+          <div class="admin-brand-text"><strong>${escHtml(state.band.name)}</strong><span>${access === 'guide' ? 'Tour studio' : 'Admin console'}</span></div>
         </div>
         <span class="admin-status" id="admin-status" data-state="idle"></span>
-        <span class="role-pill admin-role">${role === 'local-admin' ? 'local preview' : escHtml(role)}</span>
+        <span class="role-pill admin-role">${roleLabel}</span>
       </header>
       <div class="admin-main">
         <nav class="admin-nav" aria-label="Admin sections">
-          ${SECTIONS.map((g) => `
+          ${groups.map((g) => `
             <div class="admin-nav-group">${escHtml(g.group)}</div>
             ${g.items.map((s) => `
               <button class="admin-nav-item" data-section="${s.id}">
@@ -1031,7 +1125,7 @@ export function renderAdmin(container, state, helpers) {
 
   const pane = container.querySelector('#admin-pane');
   const status = container.querySelector('#admin-status');
-  const ctx = { state, role, helpers };
+  const ctx = { state, role, access, user: helpers.user, bandRole: helpers.bandRole, helpers };
   ctx.setStatus = (s) => {
     status.dataset.state = s;
     status.textContent = s === 'saving' ? 'Saving…' : s === 'saved' ? 'Saved ✓' : s === 'error' ? 'Save failed' : '';
@@ -1045,7 +1139,7 @@ export function renderAdmin(container, state, helpers) {
     }
     pane.scrollTop = 0;
     pane.innerHTML = '';
-    ALL_SECTIONS.find((s) => s.id === current)?.render(pane, ctx);
+    (sections.find((s) => s.id === current) || sections[0])?.render(pane, ctx);
   };
   ctx.go = (id) => { current = id; renderCurrent(); pane.scrollTo?.({ top: 0 }); };
 

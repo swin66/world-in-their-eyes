@@ -6,7 +6,8 @@ import { createCheckins, createStreak, createTripLog } from './gamification.js';
 import { computeProgress, renderPassport, haversineKm } from './passport.js';
 import { createContributions, KINDS, shrinkImage } from './contributions.js';
 import { supabase } from './supabase.js';
-import { initAuth, getUser, syncCheckins, pushCheckin, renderAuthModal } from './auth.js';
+import { initAuth, getUser, getRole, syncCheckins, pushCheckin, renderAuthModal } from './auth.js';
+import { getBandRole } from './roles.js';
 import { renderAdmin } from './admin.js';
 import { openWall, closeWall } from './wall.js';
 import { playIntro } from './intro.js';
@@ -989,6 +990,20 @@ function exitTrip() {
   closeSheet();
 }
 
+// A tour is shown publicly unless a guide explicitly left it unpublished —
+// in which case only its author sees it. Legacy trips (no `published` field)
+// are always visible.
+function visibleTrips() {
+  const uid = getUser()?.id;
+  return state.trips.filter((t) => t.published !== false || (t.author_id && t.author_id === uid));
+}
+
+function tripPriceBadge(trip) {
+  if (!trip.price_cents) return '';
+  const sym = { GBP: '£', USD: '$', EUR: '€' }[trip.currency] || '';
+  return ` <span class="trip-price">${sym}${(trip.price_cents / 100).toFixed(2)}</span>`;
+}
+
 function openTrips() {
   const current = autoplaySeconds();
   openModal((card, close) => {
@@ -1004,14 +1019,15 @@ function openTrips() {
         </select>
       </div>
       <div class="trip-list">
-        ${state.trips.map((trip) => {
+        ${visibleTrips().map((trip) => {
           const stops = tripFeatures(trip);
           const visitedCount = stops.filter((f) => state.checkins.has(f.properties.id)).length;
           return `
             <button class="trip-card" data-id="${trip.id}">
               <span class="trip-emoji">${trip.emoji}</span>
               <span class="trip-card-body">
-                <strong>${trip.title}</strong>
+                <strong>${trip.title}${tripPriceBadge(trip)}</strong>
+                ${trip.author_name ? `<span class="trip-author">🎫 ${trip.author_name}</span>` : ''}
                 <p>${trip.description}</p>
                 <small>${stops.length} ${t('stops')} · ${visitedCount}/${stops.length} visited</small>
               </span>
@@ -1345,10 +1361,28 @@ function openAccount() {
 
 /* ---------- Admin console (full-screen, hash-routed at #admin) ---------- */
 
-function openAdminConsole() {
+async function openAdminConsole() {
   const el = $('admin-console');
   if (!el) return;
+  el.hidden = false;
+  document.body.classList.add('admin-active');
+  el.innerHTML = '<p class="modal-text dim" style="padding:24px">Checking access…</p>';
+
+  // Effective access: platform admins/editors get the full console; a per-band
+  // tour guide gets the restricted (tours-only) console.
+  const platformRole = getRole();
+  const bandRole = await getBandRole(state.band.slug);
+  let access = 'denied';
+  if (platformRole === 'admin' || platformRole === 'editor' || platformRole === 'local-admin' || bandRole === 'band_rep') access = 'full';
+  else if (bandRole === 'guide') access = 'guide';
+
+  // Bail if the user navigated away while we were resolving the role.
+  if (location.hash !== '#admin') return;
+
   renderAdmin(el, state, {
+    access,
+    user: getUser(),
+    bandRole,
     onClose: () => { if (location.hash === '#admin') history.back(); else closeAdminConsole(); },
     toast,
     setMode,
@@ -1357,8 +1391,6 @@ function openAdminConsole() {
     refreshChoropleth,
     rebuildFilters: buildFilters,
   });
-  el.hidden = false;
-  document.body.classList.add('admin-active');
 }
 
 function closeAdminConsole() {

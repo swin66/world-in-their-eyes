@@ -236,6 +236,20 @@
 .aud-name { font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .aud-val { background: color-mix(in srgb, var(--text) 6%, transparent); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; color: var(--text); font: inherit; font-size: 13px; }
 
+/* --- Payouts placeholder --- */
+.payouts-placeholder { text-align: center; padding: 8px 0; }
+.payouts-badge {
+  display: inline-block; margin-bottom: 12px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent); font-weight: 700; font-family: 'Space Grotesk', sans-serif;
+  padding: 6px 16px; border-radius: 999px; letter-spacing: .02em;
+}
+.payouts-placeholder .btn[disabled] { opacity: .5; cursor: not-allowed; margin-top: 8px; }
+
+/* --- Tour publish toggle --- */
+.te-pub { display: flex; align-items: center; gap: 8px; font-size: 13.5px; cursor: pointer; }
+.te-pub input { width: 16px; height: 16px; }
+
 /* --- No-access --- */
 .admin-denied { max-width: 420px; margin: 18vh auto 0; text-align: center; padding: 0 24px; }
 .admin-denied h2 { font-family: 'Space Grotesk', sans-serif; }

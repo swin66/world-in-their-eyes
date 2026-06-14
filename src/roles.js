@@ -43,17 +43,27 @@ export function canModerate(platformRole, bandRole) {
   return platformRole === 'superadmin' || bandRole === 'band_rep' || bandRole === 'mod';
 }
 
-// Submit a band-rep application for superadmin review.
-export async function applyForBandRep(bandSlug, justification) {
+export function isGuide(bandRole) {
+  return bandRole === 'guide';
+}
+
+// Submit a role application (band_rep or guide) for rep/admin review.
+export async function applyForRole(bandSlug, requestedRole, justification) {
   const user = _getUser();
   if (!supabase || !user) return { error: 'Not signed in' };
   const { error } = await supabase.from('band_rep_applications').upsert({
     user_id: user.id,
     band_slug: bandSlug,
+    requested_role: requestedRole,
     justification,
     status: 'pending',
   }, { onConflict: 'user_id,band_slug' });
   return { error: error?.message ?? null };
+}
+
+// Back-compat wrapper.
+export async function applyForBandRep(bandSlug, justification) {
+  return applyForRole(bandSlug, 'band_rep', justification);
 }
 
 // Superadmin: fetch pending applications for a band.
@@ -82,7 +92,7 @@ export async function reviewApplication(id, decision, reviewerId) {
     await supabase.from('band_roles').upsert({
       user_id: app.user_id,
       band_slug: app.band_slug,
-      role: 'band_rep',
+      role: app.requested_role || 'band_rep',
       granted_by: reviewerId,
     }, { onConflict: 'user_id,band_slug' });
   }

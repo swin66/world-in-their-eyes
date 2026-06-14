@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { getBandRole, applyForBandRep, clearRoleCache, _setGetUser } from './roles.js';
+import { getBandRole, applyForRole, clearRoleCache, _setGetUser } from './roles.js';
 
 // Account UI + check-in sync. All functions are safe to call in local mode
 // (no Supabase configured): they no-op and the UI explains the situation.
@@ -103,8 +103,10 @@ export async function renderAuthModal(container, band, { onClose, onAdmin }) {
     const name = currentUser.user_metadata?.full_name || currentUser.email || 'Devotee';
     const canAdmin = currentRole === 'admin' || currentRole === 'editor';
     const bandRole = await getBandRole(band.slug);
+    const isGuideRole = bandRole === 'guide';
     const roleLabel = bandRole === 'band_rep' ? '★ Band Rep'
       : bandRole === 'mod' ? '⚑ Mod'
+      : isGuideRole ? '🎫 Tour Guide'
       : currentRole === 'admin' ? '⬡ Admin'
       : null;
 
@@ -125,9 +127,17 @@ export async function renderAuthModal(container, band, { onClose, onAdmin }) {
           <textarea id="rep-justification" rows="3" placeholder="Your connection to the band, credentials, what you'd contribute…" style="width:100%;margin-top:8px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:13px;resize:vertical"></textarea>
           <button class="btn btn-primary" id="rep-apply-btn" style="margin-top:8px;width:100%">Submit application</button>
           <p class="modal-text dim" id="rep-apply-status"></p>
+        </details>
+        <details class="auth-rep-apply">
+          <summary>Apply to be a tour guide for ${band.name}</summary>
+          <p class="modal-text dim" style="margin-top:8px">Tour guides craft custom guided tours — an expert's deep cut, a local's insider route. Tell us your angle and what fans would get:</p>
+          <textarea id="guide-justification" rows="3" placeholder="Your expertise, local knowledge, the kind of tours you'd create…" style="width:100%;margin-top:8px;padding:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);font:inherit;font-size:13px;resize:vertical"></textarea>
+          <button class="btn btn-primary" id="guide-apply-btn" style="margin-top:8px;width:100%">Submit application</button>
+          <p class="modal-text dim" id="guide-apply-status"></p>
         </details>` : ''}
       <div class="sheet-actions">
         ${canAdmin ? '<button class="btn" data-admin>Admin panel</button>' : ''}
+        ${isGuideRole ? '<button class="btn btn-primary" data-admin>Create tours</button>' : ''}
         <button class="btn" data-signout>Sign out</button>
         <button class="btn btn-primary" data-close>Done</button>
       </div>`;
@@ -137,21 +147,25 @@ export async function renderAuthModal(container, band, { onClose, onAdmin }) {
       await signOut(); onClose();
     });
     container.querySelector('[data-close]').addEventListener('click', onClose);
-    container.querySelector('#rep-apply-btn')?.addEventListener('click', async () => {
-      const justification = container.querySelector('#rep-justification')?.value?.trim();
-      const status = container.querySelector('#rep-apply-status');
-      if (!justification) { status.textContent = 'Please write a few words first.'; return; }
-      const btn = container.querySelector('#rep-apply-btn');
-      btn.disabled = true; btn.textContent = 'Submitting…';
-      const { error } = await applyForBandRep(band.slug, justification);
-      if (error) {
-        status.textContent = `Error: ${error}`;
-        btn.disabled = false; btn.textContent = 'Submit application';
-      } else {
-        status.textContent = '✓ Application submitted — an admin will review it soon.';
-        btn.remove();
-      }
-    });
+    const wireApply = (btnId, taId, statusId, requestedRole) => {
+      container.querySelector(`#${btnId}`)?.addEventListener('click', async () => {
+        const justification = container.querySelector(`#${taId}`)?.value?.trim();
+        const status = container.querySelector(`#${statusId}`);
+        if (!justification) { status.textContent = 'Please write a few words first.'; return; }
+        const btn = container.querySelector(`#${btnId}`);
+        btn.disabled = true; btn.textContent = 'Submitting…';
+        const { error } = await applyForRole(band.slug, requestedRole, justification);
+        if (error) {
+          status.textContent = `Error: ${error}`;
+          btn.disabled = false; btn.textContent = 'Submit application';
+        } else {
+          status.textContent = '✓ Application submitted — a rep or admin will review it soon.';
+          btn.remove();
+        }
+      });
+    };
+    wireApply('rep-apply-btn', 'rep-justification', 'rep-apply-status', 'band_rep');
+    wireApply('guide-apply-btn', 'guide-justification', 'guide-apply-status', 'guide');
     return;
   }
 

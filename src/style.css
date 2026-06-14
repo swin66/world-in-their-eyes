@@ -1063,6 +1063,16 @@ html, body, #app {
 }
 .trip-card-body p { margin: 3px 0 5px; font-size: 12.5px; line-height: 1.45; opacity: .75; }
 .trip-card-body small { font-size: 11px; opacity: .55; }
+.trip-price {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  padding: 1px 8px;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+.trip-author { display: block; font-size: 11px; opacity: .6; margin-top: 2px; }
 
 .trip-bar {
   position: absolute;
