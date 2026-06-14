@@ -339,17 +339,39 @@ html, body, #app {
   left: 0; right: 0;
   bottom: 0;
   z-index: 30;
-  background: var(--surface);
+  /* Glass surface */
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
   border-radius: 24px 24px 0 0;
-  box-shadow: 0 -10px 40px rgba(0, 0, 0, .55);
-  transform: translateY(105%);
-  transition: transform .35s cubic-bezier(.32, .72, .25, 1);
+  border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  border-bottom: none;
+  /* Category-colour glow injected via --cat-color when sheet opens */
+  box-shadow:
+    0 -3px 0 0 var(--cat-color, var(--accent)),
+    0 -12px 50px rgba(0, 0, 0, .65),
+    0 0 80px color-mix(in srgb, var(--cat-color, var(--accent)) 12%, transparent);
+  /* Pop-from-pin: scale up from where the pin sits on screen */
+  transform-origin: var(--sheet-ox, 50%) var(--sheet-oy, 100%);
+  transform: translateY(40px) scale(0.08);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform .44s cubic-bezier(.17, .89, .32, 1.25),
+    opacity .28s ease,
+    box-shadow .3s ease;
   max-height: 62vh;
   display: flex;
   flex-direction: column;
   padding-bottom: var(--safe-bottom);
+  /* Subtle perspective for 3D feel */
+  perspective: 800px;
 }
-.sheet-open { transform: translateY(0); }
+.sheet-open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+  pointer-events: auto;
+}
 .sheet-handle {
   /* generous grab zone for swipe-to-dismiss; the visible pill is the ::after */
   width: 120px;
@@ -370,9 +392,11 @@ html, body, #app {
 .sheet-cat-bar {
   position: absolute;
   top: 0; left: 0;
-  width: 60%;
+  width: 70%;
   height: 3px;
   border-radius: 0 3px 3px 0;
+  /* Soft glow along the bar matching the top border glow */
+  filter: drop-shadow(0 0 6px currentColor);
 }
 .sheet-watermark {
   position: absolute;
@@ -1361,7 +1385,14 @@ html, body, #app {
     bottom: 20px;
     width: 400px;
     border-radius: 24px;
+    border: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
     max-height: 70vh;
+    /* On desktop the card is a floating panel — origin toward the pin */
+    transform: scale(0.06);
+    transform-origin: var(--sheet-ox, right) var(--sheet-oy, bottom);
+  }
+  .sheet-open {
+    transform: scale(1);
   }
   .timeline { right: 450px; max-width: 520px; }
   .brand-text h1 { font-size: 20px; }

@@ -356,6 +356,30 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
   const p = feature.properties;
   state.selectedId = p.id;
   const cat = state.band.categories[p.category] || {};
+
+  // Set category colour and pin-origin on the sheet for the pop animation
+  const sheetEl = $('sheet');
+  sheetEl.style.setProperty('--cat-color', cat.color || 'var(--accent)');
+  try {
+    const pt = state.map.project(feature.geometry.coordinates);
+    const isMobile = window.innerWidth < 769;
+    if (isMobile) {
+      // Mobile: full-width sheet at bottom — origin on x-axis toward pin
+      const ox = Math.max(5, Math.min(95, (pt.x / window.innerWidth) * 100)).toFixed(1);
+      sheetEl.style.setProperty('--sheet-ox', `${ox}%`);
+      sheetEl.style.setProperty('--sheet-oy', '100%');
+    } else {
+      // Desktop: card at right:20 bottom:20 ~400px wide — origin toward pin
+      const sheetLeft = window.innerWidth - 420;
+      const sheetTop = window.innerHeight - Math.min(window.innerHeight * 0.7, 600) - 20;
+      sheetEl.style.setProperty('--sheet-ox', `${(pt.x - sheetLeft).toFixed(0)}px`);
+      sheetEl.style.setProperty('--sheet-oy', `${(pt.y - sheetTop).toFixed(0)}px`);
+    }
+  } catch (_) { /* map not ready, use defaults */ }
+
+  // Force reflow so the closed state re-applies before we add sheet-open
+  sheetEl.classList.remove('sheet-open');
+  void sheetEl.offsetWidth;
   const visited = state.checkins.has(p.id);
   const isVerified = state.checkins.isVerified(p.id);
   const artist = p.artistId ? state.artists.get(p.artistId) : null;
