@@ -16,6 +16,7 @@ import { getLang, getLangs, getSupportedLangs, setLang, t, tf } from './i18n.js'
 import { speak, stopSpeaking, isSpeaking, clearCache, getVoiceForLang, setVoiceForLang, getAutoplay, setAutoplay, fetchVoices } from './tts.js';
 import { initGalaxy } from './galaxy.js';
 import { showSelector } from './selector.js';
+import { addChoropleth } from './choropleth.js';
 
 const ELEVENLABS_KEY = import.meta.env.VITE_ELEVENLABS_KEY || '';
 
@@ -210,6 +211,30 @@ function addDataLayers() {
     },
     paint: { 'text-color': theme.bg },
   });
+
+  // Subtle country tint by place/gig density (or band.audience if supplied),
+  // plus thinning of minor place labels so the globe reads cleaner.
+  declutterLabels(map);
+  addChoropleth(map, state.band, state.places.features, theme.accent)
+    .catch((e) => console.warn('[choropleth] skipped:', e));
+}
+
+// Thin out the busiest label layers so only meaningful names remain at a
+// glance. We dim minor settlement labels rather than deleting them, so they
+// still surface when you zoom right in.
+function declutterLabels(map) {
+  for (const layer of map.getStyle()?.layers || []) {
+    if (layer.type !== 'symbol') continue;
+    const id = layer.id;
+    if (OUR_LAYERS.has(id)) continue;
+    // Hide the smallest settlements outright at globe/region scale.
+    if (/village|hamlet|suburb|neighbourhood|town/i.test(id)) {
+      try { map.setLayoutProperty(id, 'visibility', 'none'); } catch (_) {}
+    } else if (/place|city|state|province/i.test(id)) {
+      // Soften remaining place labels so country/region names dominate.
+      try { map.setPaintProperty(id, 'text-opacity', 0.55); } catch (_) {}
+    }
+  }
 }
 
 function bindMapInteractions() {
