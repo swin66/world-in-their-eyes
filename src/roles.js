@@ -66,36 +66,86 @@ export async function applyForBandRep(bandSlug, justification) {
   return applyForRole(bandSlug, 'band_rep', justification);
 }
 
-// Superadmin: fetch pending applications for a band.
+// Admin / band rep: fetch pending applications for a band.
+// (No profiles embed — profiles RLS only exposes a user's own row, and there's
+// no FK from applications→profiles for PostgREST to embed through anyway.)
 export async function getPendingApplications(bandSlug) {
   if (!supabase) return [];
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('band_rep_applications')
-    .select('*, profiles(full_name, avatar_url)')
+    .select('*')
     .eq('band_slug', bandSlug)
     .eq('status', 'pending')
     .order('created_at');
-  return data ?? [];
+  return error ? [] : (data ?? []);
+}
+
+// Admin / band rep: the current tour guides for a band.
+export async function getBandGuides(bandSlug) {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from('band_roles')
+    .select('user_id, granted_at')
+    .eq('band_slug', bandSlug)
+    .eq('role', 'guide')
+    .order('granted_at');
+  return error ? [] : (data ?? []);
+}
+
+// Admin / band rep: count guides for a band (cheap, head-only).
+export async function countBandGuides(bandSlug) {
+  if (!supabase) return 0;
+  const { count } = await supabase
+    .from('band_roles')
+    .select('user_id', { count: 'exact', head: true })
+    .eq('band_slug', bandSlug)
+    .eq('role', 'guide');
+  return count ?? 0;
+}
+
+// Map a set of user IDs → display names (requires the "staff read profiles"
+// policy; falls back to an empty map for non-staff or on error).
+export async function getProfileNames(userIds) {
+  const ids = [...new Set(userIds.filter(Boolean))];
+  if (!supabase || !ids.length) return {};
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', ids);
+  if (error) return {};
+  return Object.fromEntries((data ?? []).map((p) => [p.id, p.display_name]));
+}
+
+// Revoke a specific band role (e.g. remove someone as a guide).
+export async function revokeBandRole(userId, bandSlug, role) {
+  if (!supabase) return { error: 'No backend' };
+  const { error } = await supabase.from('band_roles')
+    .delete()
+    .eq('user_id', userId).eq('band_slug', bandSlug).eq('role', role);
+  return { error: error?.message ?? null };
 }
 
 // Superadmin: approve or reject an application.
 export async function reviewApplication(id, decision, reviewerId) {
-  if (!supabase) return;
-  const { data: app } = await supabase
+  if (!supabase) return { error: 'No backend' };
+  const { data: app, error } = await supabase
     .from('band_rep_applications')
     .update({ status: decision, reviewed_by: reviewerId, reviewed_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single();
+  if (error) return { error: error.message };
 
   if (decision === 'approved' && app) {
-    await supabase.from('band_roles').upsert({
+    const { error: grantErr } = await supabase.from('band_roles').upsert({
       user_id: app.user_id,
       band_slug: app.band_slug,
       role: app.requested_role || 'band_rep',
       granted_by: reviewerId,
     }, { onConflict: 'user_id,band_slug' });
+    if (grantErr) return { error: grantErr.message };
   }
+  return { error: null };
 }
 
 // Grant or revoke mod role for a specific user+band.

@@ -57,7 +57,7 @@ function renderBands(bands, el, resolve) {
       </div>
       <div class="band-card-body">
         <strong>Your band here</strong>
-        <span>Fork this atlas and build one for any artist</span>
+        <span>More artists coming soon</span>
       </div>
     </div>`;
 

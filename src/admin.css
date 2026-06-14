@@ -112,7 +112,7 @@
   gap: 18px;
   align-items: stretch;
 }
-.admin-pane > * { width: 100%; max-width: 760px; margin: 0 auto; }
+.admin-pane > * { width: 100%; max-width: none; margin: 0; }
 
 /* --- Settings card --- */
 .set-card {
@@ -184,6 +184,12 @@
   background: color-mix(in srgb, var(--text) 5%, transparent);
   border: 1px solid var(--line); border-radius: 12px;
   padding: 14px; text-align: center;
+  color: var(--text); font: inherit; cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.ov-stat[data-go]:hover {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--line));
 }
 .ov-stat strong { display: block; font-family: 'Space Grotesk', sans-serif; font-size: 26px; color: var(--accent); }
 .ov-stat span { font-size: 11.5px; opacity: .6; }

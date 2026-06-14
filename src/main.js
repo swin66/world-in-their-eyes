@@ -49,22 +49,37 @@ async function loadJSON(url) {
 // otherwise fall back to the static JSON shipped with the site.
 async function loadData(slug) {
   const base = `/data/bands/${slug}`;
-  const [bandJson, placesJson, artistsJson, tripsJson, sideshowsJson] = await Promise.all([
+  const [bandJson, placesJson, eventsJson, artistsJson, tripsJson, sideshowsJson] = await Promise.all([
     loadJSON(`${base}/band.json`),
     loadJSON(`${base}/places.json`),
+    loadJSON(`${base}/events.json`).catch(() => ({ type: 'FeatureCollection', features: [] })),
     loadJSON(`${base}/artists.json`),
     loadJSON(`${base}/trips.json`).catch(() => ({ trips: [] })),
     loadJSON(`${base}/sideshows.json`).catch(() => ({ sideshows: [] })),
   ]);
   let band = bandJson;
-  let places = placesJson;
+  let placeFeatures = placesJson.features || [];
+  let eventFeatures = eventsJson.features || [];
   let artists = artistsJson.artists;
   let trips = tripsJson.trips || [];
   const sideshows = sideshowsJson.sideshows || [];
+
+  // Shared row → GeoJSON feature shape for both places and events.
+  const toFeature = (r) => ({
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [r.lng, r.lat] },
+    properties: {
+      id: r.id, title: r.title, category: r.category, year: r.year,
+      summary: r.summary, story: r.story, approx: r.approx || undefined,
+      artistId: r.artist_id || undefined, date: r.event_date || undefined,
+    },
+  });
+
   if (supabase) {
-    const [bandRes, placesRes, artistsRes, tripsRes] = await Promise.all([
+    const [bandRes, placesRes, eventsRes, artistsRes, tripsRes] = await Promise.all([
       supabase.from('bands').select('config').eq('slug', bandJson.slug).maybeSingle(),
       supabase.from('places').select('*').eq('band_slug', bandJson.slug),
+      supabase.from('events').select('*').eq('band_slug', bandJson.slug),
       supabase.from('artists').select('*').eq('band_slug', bandJson.slug),
       supabase.from('trips').select('*').eq('band_slug', bandJson.slug).order('position'),
     ]);
@@ -72,22 +87,17 @@ async function loadData(slug) {
     // file remains the fallback / fresh-clone seed.
     if (bandRes.data?.config && Object.keys(bandRes.data.config).length) band = bandRes.data.config;
     if (tripsRes.data?.length) trips = tripsRes.data;
-    if (placesRes.data?.length) {
-      places = {
-        type: 'FeatureCollection',
-        features: placesRes.data.map((r) => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [r.lng, r.lat] },
-          properties: {
-            id: r.id, title: r.title, category: r.category, year: r.year,
-            summary: r.summary, story: r.story, approx: r.approx || undefined,
-            artistId: r.artist_id || undefined,
-          },
-        })),
-      };
-    }
+    if (placesRes.data?.length) placeFeatures = placesRes.data.map(toFeature);
+    if (eventsRes.data?.length) eventFeatures = eventsRes.data.map(toFeature);
     if (artistsRes.data?.length) artists = artistsRes.data;
   }
+
+  // Places and events render and filter uniformly on the map — merge them into a
+  // single collection. The `category` (see categories.js) marks which is which.
+  const places = {
+    type: 'FeatureCollection',
+    features: [...placeFeatures, ...eventFeatures],
+  };
   return { band, places, artists, trips, sideshows };
 }
 
@@ -434,7 +444,9 @@ function openSheet(feature, zoomOverride, slideDir = 0, skipFly = false) {
     <div class="sheet-meta">
       <span class="chip-dot" style="background:${cat.color}"></span>
       <span>${cat.label || ''}</span>
-      <span class="sheet-year">${p.year}</span>
+      <span class="sheet-year">${p.date
+        ? new Date(`${p.date}T00:00:00`).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })
+        : p.year}</span>
       ${p.approx ? `<span class="sheet-approx">${t('approxLocation')}</span>` : ''}
       ${isVerified ? `<span class="sheet-approx sheet-verified">${t('verifiedVisit')}</span>` : ''}
     </div>
