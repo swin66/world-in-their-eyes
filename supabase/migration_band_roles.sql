@@ -55,18 +55,21 @@ create policy "admin manages all band roles"
   on public.band_roles for all
   using (public.app_role() = 'admin');
 
+-- SECURITY DEFINER helper: checks a band role without re-entering band_roles'
+-- RLS (a plain subquery here would cause infinite recursion).
+create or replace function public.has_band_role(slug text, want text)
+returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.band_roles
+    where user_id = auth.uid() and band_slug = slug and role = want
+  );
+$$;
+
 drop policy if exists "band_rep manages mods" on public.band_roles;
 create policy "band_rep manages mods"
   on public.band_roles for all
-  using (
-    band_roles.role = 'mod' and
-    exists (
-      select 1 from public.band_roles my_role
-      where my_role.user_id = auth.uid()
-        and my_role.band_slug = band_roles.band_slug
-        and my_role.role = 'band_rep'
-    )
-  );
+  using (band_roles.role = 'mod' and public.has_band_role(band_roles.band_slug, 'band_rep'));
 
 -- ─── band_rep_applications ─────────────────────────────────────────────────────
 create table if not exists public.band_rep_applications (

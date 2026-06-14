@@ -38,16 +38,11 @@ alter table public.trips add column if not exists currency    text not null defa
 alter table public.trips add column if not exists published    boolean not null default false;
 
 -- Guides manage only their own tours (in addition to the admin/editor policy).
+-- Uses the SECURITY DEFINER helper from migration_band_roles.sql to avoid
+-- triggering band_roles' own RLS (which would recurse).
 drop policy if exists "guides write own trips" on public.trips;
 create policy "guides write own trips" on public.trips for all
-  using (
-    author_id = auth.uid() and exists (
-      select 1 from public.band_roles r
-      where r.user_id = auth.uid()
-        and r.band_slug = trips.band_slug
-        and r.role = 'guide'
-    )
-  )
+  using (author_id = auth.uid() and public.has_band_role(trips.band_slug, 'guide'))
   with check (author_id = auth.uid());
 
 -- ─── applications: support guide applications too ─────────────────────────────
@@ -63,28 +58,13 @@ alter table public.band_rep_applications
 drop policy if exists "band_rep manages guides" on public.band_roles;
 create policy "band_rep manages guides"
   on public.band_roles for all
-  using (
-    band_roles.role = 'guide' and
-    exists (
-      select 1 from public.band_roles my_role
-      where my_role.user_id = auth.uid()
-        and my_role.band_slug = band_roles.band_slug
-        and my_role.role = 'band_rep'
-    )
-  );
+  using (band_roles.role = 'guide' and public.has_band_role(band_roles.band_slug, 'band_rep'));
 
 -- Band reps can review applications for their own band (previously admin-only).
 drop policy if exists "band_rep reviews applications" on public.band_rep_applications;
 create policy "band_rep reviews applications"
   on public.band_rep_applications for all
-  using (
-    exists (
-      select 1 from public.band_roles my_role
-      where my_role.user_id = auth.uid()
-        and my_role.band_slug = band_rep_applications.band_slug
-        and my_role.role = 'band_rep'
-    )
-  );
+  using (public.has_band_role(band_rep_applications.band_slug, 'band_rep'));
 
 -- ─── Done ─────────────────────────────────────────────────────────────────────
 -- Grant a guide directly (skipping the application flow):
