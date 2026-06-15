@@ -11,6 +11,7 @@
 import { supabase } from './supabase.js';
 import { getRole } from './auth.js';
 import { isEventCategory } from './categories.js';
+import { generateThemeFromImage } from './theme-gen.js';
 import {
   getPendingApplications, getBandGuides, countBandGuides,
   reviewApplication, revokeBandRole, getProfileNames,
@@ -224,6 +225,16 @@ function renderIdentity(pane, ctx) {
   themeWrap.innerHTML = `
     <header class="set-card-head"><h3>Theme &amp; colours</h3>
       <p>Colours apply per mode. Preview updates the app live; Save keeps it.</p></header>
+    <div class="theme-gen">
+      <p class="modal-text dim" style="margin:0 0 8px">✨ Generate a palette from an album cover or photo — it fills the colours below, then Preview or Save.</p>
+      <div class="admin-row">
+        <input type="text" id="tg-url" placeholder="Image URL (e.g. the cover image above)" value="${escAttr(band.coverImage || '')}">
+        <button class="btn" id="tg-from-url" style="flex:0 0 auto">Generate</button>
+        <label class="btn" style="flex:0 0 auto;cursor:pointer">Upload
+          <input type="file" id="tg-file" accept="image/*" hidden></label>
+      </div>
+      <p class="modal-text dim" id="tg-status" style="margin:6px 0 0"></p>
+    </div>
     <div class="theme-grid">
       <span></span><span class="theme-col-head">Dark</span><span class="theme-col-head">Light</span>
       ${THEME_KEYS.map((k) => `
@@ -253,6 +264,35 @@ function renderIdentity(pane, ctx) {
     band.themes.dark.mapStyle = themeWrap.querySelector('#th-map-dark').value.trim();
     band.themes.light.mapStyle = themeWrap.querySelector('#th-map-light').value.trim();
   };
+  // Fill the colour pickers from a generated palette and live-preview it.
+  const applyGenerated = (themes) => {
+    for (const input of themeWrap.querySelectorAll('input[type="color"]')) {
+      const v = themes[input.dataset.mode]?.[input.dataset.key];
+      if (v) input.value = v;
+    }
+    collectTheme();
+    helpers.setMode(state.mode);
+  };
+  const tgStatus = themeWrap.querySelector('#tg-status');
+  const runGen = async (src, label) => {
+    tgStatus.textContent = `Reading ${label}…`;
+    try {
+      applyGenerated(await generateThemeFromImage(src));
+      tgStatus.textContent = 'Palette generated — Preview is live. Save to keep it.';
+    } catch (err) {
+      tgStatus.textContent = err.message || 'Could not generate a theme from that image.';
+    }
+  };
+  themeWrap.querySelector('#tg-from-url').addEventListener('click', () => {
+    const url = themeWrap.querySelector('#tg-url').value.trim();
+    if (url) runGen(url, 'image'); else tgStatus.textContent = 'Add an image URL or upload a file.';
+  });
+  themeWrap.querySelector('#tg-file').addEventListener('change', (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) { const obj = URL.createObjectURL(file); runGen(obj, file.name).finally(() => URL.revokeObjectURL(obj)); }
+  });
+
   themeWrap.querySelector('[data-preview]').addEventListener('click', () => {
     collectTheme(); helpers.setMode(state.mode); helpers.toast('Previewing — Save to keep it');
   });
