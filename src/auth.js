@@ -1,5 +1,52 @@
 import { supabase } from './supabase.js';
 import { getBandRole, applyForRole, clearRoleCache, _setGetUser } from './roles.js';
+import { generateThemeFromImage } from './theme-gen.js';
+import { saveUserTheme, clearUserTheme, applyUserTheme, loadUserTheme } from './user-theme.js';
+
+// Personal-theme control, shown in the account panel for any visitor (it's a
+// local, per-device override that layers over the band theme).
+function themePanelHTML(band) {
+  const has = !!loadUserTheme(band.slug);
+  return `<details class="auth-rep-apply">
+    <summary>🎨 Personalise your theme</summary>
+    <p class="modal-text dim" style="margin-top:8px">Generate your own palette from any image — an album cover, a photo. It applies just for you, on this device.</p>
+    <div class="sheet-actions" style="margin-top:8px;flex-wrap:wrap">
+      <label class="btn btn-primary" style="cursor:pointer">Generate from image
+        <input type="file" id="ut-file" accept="image/*" hidden></label>
+      <button class="btn" id="ut-reset" ${has ? '' : 'disabled'}>Reset to band theme</button>
+    </div>
+    <p class="modal-text dim" id="ut-status" style="margin-top:6px"></p>
+  </details>`;
+}
+
+function wireThemePanel(container, band) {
+  const file = container.querySelector('#ut-file');
+  if (!file) return;
+  const status = container.querySelector('#ut-status');
+  const reset = container.querySelector('#ut-reset');
+  const mode = localStorage.getItem(`wite:${band.slug}:mode`) || band.defaultMode || 'dark';
+  file.addEventListener('change', async (e) => {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    status.textContent = 'Reading image…';
+    const url = URL.createObjectURL(f);
+    try {
+      saveUserTheme(band.slug, await generateThemeFromImage(url));
+      applyUserTheme(band.slug, mode);
+      status.textContent = 'Your theme is live. Reset any time.';
+      if (reset) reset.disabled = false;
+    } catch (err) {
+      status.textContent = err.message || 'Could not generate a theme from that image.';
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  });
+  reset?.addEventListener('click', () => {
+    clearUserTheme(band.slug);
+    location.reload(); // simplest reliable way to restore the band palette
+  });
+}
 
 // Account UI + check-in sync. All functions are safe to call in local mode
 // (no Supabase configured): they no-op and the UI explains the situation.
@@ -90,12 +137,14 @@ export async function renderAuthModal(container, band, { onClose, onAdmin }) {
       <h2>Your pilgrimage, saved here</h2>
       <p class="modal-text">Accounts aren't switched on yet — check-ins and badges
       are stored safely on this device for now.</p>
+      ${themePanelHTML(band)}
       <div class="sheet-actions">
         <button class="btn" data-admin>Admin tools</button>
         <button class="btn btn-primary" data-close>Got it</button>
       </div>`;
     container.querySelector('[data-close]').addEventListener('click', onClose);
     container.querySelector('[data-admin]').addEventListener('click', onAdmin);
+    wireThemePanel(container, band);
     return;
   }
 
@@ -135,6 +184,7 @@ export async function renderAuthModal(container, band, { onClose, onAdmin }) {
           <button class="btn btn-primary" id="guide-apply-btn" style="margin-top:8px;width:100%">Submit application</button>
           <p class="modal-text dim" id="guide-apply-status"></p>
         </details>` : ''}
+      ${themePanelHTML(band)}
       <div class="sheet-actions">
         ${canAdmin ? '<button class="btn" data-admin>Admin panel</button>' : ''}
         ${isGuideRole ? '<button class="btn btn-primary" data-admin>Create tours</button>' : ''}
@@ -147,6 +197,7 @@ export async function renderAuthModal(container, band, { onClose, onAdmin }) {
       await signOut(); onClose();
     });
     container.querySelector('[data-close]').addEventListener('click', onClose);
+    wireThemePanel(container, band);
     const wireApply = (btnId, taId, statusId, requestedRole) => {
       container.querySelector(`#${btnId}`)?.addEventListener('click', async () => {
         const justification = container.querySelector(`#${taId}`)?.value?.trim();
@@ -187,7 +238,9 @@ export async function renderAuthModal(container, band, { onClose, onAdmin }) {
       <button class="btn btn-primary" type="submit">Send me a magic link</button>
     </form>
     <p class="modal-text dim" id="auth-status"></p>
-    <p class="auth-small">By signing in you agree to fan-use only. No spam, ever.</p>`;
+    <p class="auth-small">By signing in you agree to fan-use only. No spam, ever.</p>
+    ${themePanelHTML(band)}`;
+  wireThemePanel(container, band);
 
   for (const btn of container.querySelectorAll('.auth-provider')) {
     btn.addEventListener('click', () => {

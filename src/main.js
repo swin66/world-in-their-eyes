@@ -8,6 +8,7 @@ import { createContributions, KINDS, shrinkImage } from './contributions.js';
 import { supabase } from './supabase.js';
 import { initAuth, getUser, getRole, syncCheckins, pushCheckin, renderAuthModal } from './auth.js';
 import { getBandRole } from './roles.js';
+import { applyUserTheme } from './user-theme.js';
 import { renderAdmin } from './admin.js';
 import { openWall, closeWall } from './wall.js';
 import { playIntro } from './intro.js';
@@ -119,6 +120,8 @@ function applyTheme(band, mode) {
   $('band-title').textContent = band.appTitle;
   $('band-tagline').textContent = band.tagline;
   $('brand-mark').style.background = `linear-gradient(135deg, ${theme.accent}, ${theme.accent2})`;
+  // A fan's personal palette (if any) layers over the band theme.
+  applyUserTheme(band.slug, mode);
 }
 
 function setMode(mode) {
